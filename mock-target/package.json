@@ -1,0 +1,12 @@
+{
+  "name": "mock-target",
+  "version": "1.2.0",
+  "description": "SentinelDev demo testbed — simulates a project with a vulnerable crypto-utils dependency",
+  "private": true,
+  "dependencies": {
+    "crypto-utils": "1.2.0"
+  },
+  "notes": {
+    "CVE-2024-DEMO01": "crypto-utils@<2.0.0 exposes encryptMD5() which uses MD5 — not collision-resistant. Upgrade to encryptSHA256()."
+  }
+}

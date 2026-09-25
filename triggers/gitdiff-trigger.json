@@ -1,0 +1,8 @@
+{
+  "kind": "GIT_DIFF",
+  "changedFiles": [
+    "src/userService.ts",
+    "src/reportService.ts"
+  ],
+  "projectRoot": "__MOCK_TARGET_ROOT__"
+}

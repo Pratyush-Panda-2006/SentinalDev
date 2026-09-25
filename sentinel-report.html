@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SentinelDev Pipeline Report</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      background: #f3f4f6;
+      color: #1f2328;
+    }
+    .page { max-width: 960px; margin: 0 auto; padding: 32px 20px 64px; }
+    .header {
+      background: #1f2328;
+      color: #fff;
+      border-radius: 12px;
+      padding: 28px 32px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .header-title { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
+    .header-sub { font-size: 13px; color: #9ca3af; margin-top: 4px; }
+    .header-ts { font-size: 11px; color: #6b7280; margin-top: 8px; font-family: monospace; }
+    .score-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f59e0b;
+      color: #fff;
+      border-radius: 8px;
+      padding: 6px 16px;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .metric-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 18px 20px;
+    }
+    .metric-value { font-size: 32px; font-weight: 700; color: #1f2328; line-height: 1; }
+    .metric-label { font-size: 12px; color: #6b7280; margin-top: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+    .section {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .section-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #f9fafb;
+    }
+    .section-title { font-size: 14px; font-weight: 600; color: #1f2328; }
+    .section-body { padding: 20px; }
+    .risk-banner {
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .risk-banner-score {
+      font-size: 18px;
+      font-weight: 800;
+      color: #92400e;
+      white-space: nowrap;
+    }
+    .risk-banner-body { color: #92400e; font-size: 13px; line-height: 1.5; }
+    .mermaid-wrap {
+      background: #fafafa;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 20px;
+      overflow-x: auto;
+      text-align: center;
+    }
+    .diff-viewer {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      background: #0d1117;
+      border-radius: 8px;
+      overflow-x: auto;
+      padding: 4px 0;
+    }
+    .diff-viewer div { padding: 1px 16px; white-space: pre; }
+    .diff-add  { background: #0d2818; color: #3fb950; }
+    .diff-del  { background: #2d0f0f; color: #f85149; }
+    .diff-hunk { background: #161b22; color: #58a6ff; }
+    .diff-file { background: #161b22; color: #e3b341; font-weight: 600; }
+    .diff-ctx  { color: #8b949e; }
+    .trigger-pill {
+      display: inline-block;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+      border-radius: 20px;
+      padding: 3px 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .impacted-list { list-style: none; }
+    .impacted-list li {
+      padding: 6px 0;
+      border-bottom: 1px solid #f3f4f6;
+      font-family: monospace;
+      font-size: 12px;
+      color: #374151;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .impacted-list li::before { content: "📄"; font-size: 11px; }
+    .footer {
+      text-align: center;
+      font-size: 11px;
+      color: #9ca3af;
+      margin-top: 40px;
+      padding-top: 16px;
+      border-top: 1px solid #e5e7eb;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <!-- Header -->
+    <div class="header">
+      <div>
+        <div class="header-title">🛡️ SentinelDev Pipeline Report</div>
+        <div class="header-sub">CVE Advisory — CVE-2024-DEMO01 (crypto-utils)</div>
+        <div class="header-ts">Completed: 2026-09-25T04:54:22.067Z</div>
+      </div>
+      <div class="score-badge">⚡ MED</div>
+    </div>
+
+    <!-- Risk Banner -->
+    <div class="risk-banner">
+      <div class="risk-banner-score">BLAST RADIUS: MED</div>
+      <div class="risk-banner-body">
+        1 file(s) impacted &nbsp;·&nbsp; 4 breaking signature(s) detected
+      </div>
+    </div>
+
+    <!-- Quick Metrics -->
+    <div class="metrics">
+      <div class="metric-card">
+        <div class="metric-value">2</div>
+        <div class="metric-label">Call Sites Patched</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">1</div>
+        <div class="metric-label">Files Impacted</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">1</div>
+        <div class="metric-label">Endpoints Synced</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-value">4</div>
+        <div class="metric-label">Breaking Signatures</div>
+      </div>
+    </div>
+
+    <!-- Call Graph -->
+    <div class="section">
+      <div class="section-header">
+        <span>🌐</span>
+        <span class="section-title">Call Graph — Blast Radius Traversal</span>
+      </div>
+      <div class="section-body">
+        <div class="mermaid-wrap">
+          <div class="mermaid">
+graph LR
+  reportService_ts_buildReport[&quot;reportService.ts\nbuildReport()&quot;] --&gt; reportService_ts_signReport[&quot;reportService.ts\nsignReport()&quot;]
+  api_ts__module_[&quot;api.ts&quot;] --&gt; api_ts__anonymous_[&quot;api.ts\n&lt;anonymous&gt;()&quot;]
+  api_ts__anonymous_[&quot;api.ts\n&lt;anonymous&gt;()&quot;] --&gt; reportService_ts_buildReport[&quot;reportService.ts\nbuildReport()&quot;]
+  userService_ts_getUsers[&quot;userService.ts\ngetUsers()&quot;] --&gt; userService_ts_hashUserId[&quot;userService.ts\nhashUserId()&quot;]
+  api_ts__anonymous_[&quot;api.ts\n&lt;anonymous&gt;()&quot;] --&gt; userService_ts_getUsers[&quot;userService.ts\ngetUsers()&quot;]
+          </div>
+        </div>
+        
+        <div style="margin-top:16px;">
+          <div style="font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Impacted Files</div>
+          <ul class="impacted-list">
+            <li>api.ts</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Breaking Signatures -->
+    <div class="section">
+      <div class="section-header">
+        <span>⚠️</span>
+        <span class="section-title">Breaking Signatures</span>
+      </div>
+      <div class="section-body">
+        
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="background:#f9fafb;border-bottom:2px solid #e5e7eb;">
+          <th style="padding:8px 14px;text-align:left;font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;">File</th>
+          <th style="padding:8px 14px;text-align:left;font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;">Function</th>
+        </tr>
+      </thead>
+      <tbody><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">reportService.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">signReport</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">reportService.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">buildReport</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">userService.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">hashUserId</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">userService.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">getUsers</td>
+    </tr></tbody>
+    </table>
+      </div>
+    </div>
+
+    <!-- CVE Remediation Diff -->
+    
+    <div class="section">
+      <div class="section-header">
+        <span>🔧</span>
+        <span class="section-title">CVE Remediation — CVE-2024-DEMO01</span>
+        <span class="trigger-pill">crypto-utils 1.2.0 → 2.0.0</span>
+      </div>
+      <div class="section-body">
+        <div style="margin-bottom:12px;display:flex;gap:24px;font-size:13px;">
+          <div><span style="color:#f85149;font-family:monospace;">encryptMD5()</span>
+             <span style="color:#6b7280;margin:0 6px;">→</span>
+             <span style="color:#3fb950;font-family:monospace;">encryptSHA256()</span></div>
+        </div>
+        <div class="diff-viewer"><div class="diff-ctx">===================================================================</div><div class="diff-file">--- a/src\reportService.ts	original</div><div class="diff-file">+++ b/src\reportService.ts	patched</div><div class="diff-hunk">@@ -10,9 +10,9 @@</div><div class="diff-ctx">  * Generates a cryptographic signature for a report payload.</div><div class="diff-ctx">  * Currently uses encryptMD5 — flagged by CVE-2024-DEMO01.</div><div class="diff-ctx">  */</div><div class="diff-ctx"> export function signReport(payload: string): string {</div><div class="diff-del">-  return encryptMD5(payload);</div><div class="diff-add">+  return encryptSHA256(payload);</div><div class="diff-ctx"> }</div><div class="diff-ctx"> </div><div class="diff-ctx"> /**</div><div class="diff-ctx">  * Builds and signs a report object.</div><div class="diff-ctx"></div><div class="diff-ctx">===================================================================</div><div class="diff-file">--- a/src\userService.ts	original</div><div class="diff-file">+++ b/src\userService.ts	patched</div><div class="diff-hunk">@@ -10,9 +10,9 @@</div><div class="diff-ctx">  * Returns a stable hash for a given userId.</div><div class="diff-ctx">  * Currently uses encryptMD5 — flagged by CVE-2024-DEMO01.</div><div class="diff-ctx">  */</div><div class="diff-ctx"> export function hashUserId(userId: string): string {</div><div class="diff-del">-  return encryptMD5(userId);</div><div class="diff-add">+  return encryptSHA256(userId);</div><div class="diff-ctx"> }</div><div class="diff-ctx"> </div><div class="diff-ctx"> /**</div><div class="diff-ctx">  * Fetches a mock list of users with hashed IDs.</div><div class="diff-ctx"></div></div>
+      </div>
+    </div>
+
+    <!-- Spec Sync -->
+    <div class="section">
+      <div class="section-header">
+        <span>📋</span>
+        <span class="section-title">OpenAPI Spec Sync — DocuSync Results</span>
+        <span class="trigger-pill">openapi.yaml</span>
+      </div>
+      <div class="section-body">
+        
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="background:#f9fafb;border-bottom:2px solid #e5e7eb;">
+          <th style="padding:10px 14px;text-align:left;font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;">Method</th>
+          <th style="padding:10px 14px;text-align:left;font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;">Path</th>
+          <th style="padding:10px 14px;text-align:left;font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;">Change</th>
+        </tr>
+      </thead>
+      <tbody>
+    <tr>
+      <td style="padding:10px 14px;"><span style="background:#8b5cf6;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;">POST</span></td>
+      <td style="padding:10px 14px;font-family:monospace;font-size:13px;">/report</td>
+      <td style="padding:10px 14px;"><span style="background:#22c55e;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;text-transform:uppercase;">added</span></td>
+    </tr></tbody>
+    </table>
+        
+        <div style="margin-top:16px;">
+          <div style="font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Schema Diff</div>
+          <div class="diff-viewer"><div class="diff-ctx">===================================================================</div><div class="diff-file">--- a/openapi.yaml	original</div><div class="diff-file">+++ b/openapi.yaml	patched</div><div class="diff-hunk">@@ -1,25 +1,23 @@</div><div class="diff-del">-openapi: &quot;3.0.3&quot;</div><div class="diff-add">+openapi: 3.0.3</div><div class="diff-ctx"> info:</div><div class="diff-ctx">   title: SentinelDev Mock API</div><div class="diff-del">-  version: &quot;1.0.0&quot;</div><div class="diff-add">+  version: 1.0.0</div><div class="diff-ctx">   description: &gt;</div><div class="diff-del">-    Mock API for the SentinelDev demo testbed.</div><div class="diff-del">-    NOTE: POST /report is intentionally absent — DocuSync will detect and add it.</div><div class="diff-del">-</div><div class="diff-add">+    Mock API for the SentinelDev demo testbed. NOTE: POST /report is intentionally absent — DocuSync will detect and add</div><div class="diff-add">+    it.</div><div class="diff-ctx"> servers:</div><div class="diff-ctx">   - url: http://localhost:3000</div><div class="diff-ctx">     description: Local development server</div><div class="diff-del">-</div><div class="diff-ctx"> paths:</div><div class="diff-ctx">   /users:</div><div class="diff-ctx">     get:</div><div class="diff-ctx">       summary: List all users</div><div class="diff-ctx">       operationId: getUsers</div><div class="diff-ctx">       tags:</div><div class="diff-ctx">         - Users</div><div class="diff-ctx">       responses:</div><div class="diff-del">-        &quot;200&quot;:</div><div class="diff-add">+        '200':</div><div class="diff-ctx">           description: A list of users with hashed IDs</div><div class="diff-ctx">           content:</div><div class="diff-ctx">             application/json:</div><div class="diff-ctx">               schema:</div><div class="diff-hunk">@@ -37,5 +35,14 @@</div><div class="diff-ctx">                           type: string</div><div class="diff-ctx">                           example: Alice</div><div class="diff-ctx">                         hashedId:</div><div class="diff-ctx">                           type: string</div><div class="diff-del">-                          example: &quot;5f4dcc3b5aa765d61d8327de...&quot;</div><div class="diff-add">+                          example: 5f4dcc3b5aa765d61d8327de...</div><div class="diff-add">+  /report:</div><div class="diff-add">+    post:</div><div class="diff-add">+      summary: POST /report</div><div class="diff-add">+      operationId: postreport</div><div class="diff-add">+      tags:</div><div class="diff-add">+        - report</div><div class="diff-add">+      responses:</div><div class="diff-add">+        '200':</div><div class="diff-add">+          description: Success</div><div class="diff-ctx"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">Made with IBM Bob &nbsp;·&nbsp; SentinelDev Autonomous Lifecycle Engine</div>
+
+  </div>
+
+  <script>
+    mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'loose' });
+  </script>
+</body>
+</html>
