@@ -457,49 +457,62 @@
       <span id="target-badge" class="badge badge-grey">● idle</span>
     </div>
 
-    <!-- Control panel -->
+    <!-- ── Primary control panel ── -->
     <div class="card control-panel">
-      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;">
-        <div style="flex:1;min-width:220px;">
-          <div class="section-head">Local Repository Path</div>
-          <div class="repo-row">
-            <input id="repo-path" class="repo-input" type="text" placeholder="Leave blank to use mock-target (demo)" />
+
+      <!-- URL + Branch row -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;">
+        <div style="flex:1;min-width:260px;">
+          <div class="section-head" style="margin-bottom:6px;">
+            <svg viewBox="0 0 16 16" fill="currentColor" style="width:12px;height:12px;vertical-align:-1px;margin-right:4px;"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+            Repository URL
           </div>
+          <input id="github-url" class="repo-input" type="url" placeholder="https://github.com/owner/repo  (leave blank for mock-target demo)" />
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-          <!-- Sample Scenarios -->
-          <div class="scenarios-wrap" id="scenarios-wrap">
-            <button class="scenarios-btn" onclick="toggleScenarios()">
-              <svg viewBox="0 0 16 16" fill="currentColor"><path d="M5.52.359A.5.5 0 0 1 6 0h4a.5.5 0 0 1 .474.658L8.694 6H12.5a.5.5 0 0 1 .395.807l-7 9a.5.5 0 0 1-.873-.454L6.823 10H3.5a.5.5 0 0 1-.48-.641l2.5-9z"/></svg>
-              Sample Scenarios ▾
-            </button>
-            <div class="scenarios-dropdown" id="scenarios-dropdown">
-              <div class="scenario-item" onclick="runScenario('cve-demo')">
-                <div class="scenario-icon" style="background:rgba(248,81,73,0.15);border:1px solid rgba(248,81,73,0.3);">🔥</div>
-                <div>
-                  <div class="scenario-title">CVE Remediation Demo</div>
-                  <div class="scenario-desc">Patches encryptMD5 → encryptSHA256 across mock-target. Shows 2 call sites refactored, MED blast radius, spec drift fixed.</div>
-                </div>
+        <div style="width:130px;">
+          <div class="section-head" style="margin-bottom:6px;">Branch</div>
+          <input id="github-branch" class="repo-input" type="text" placeholder="main" />
+        </div>
+      </div>
+
+      <!-- Action buttons row -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <!-- Sample Scenarios -->
+        <div class="scenarios-wrap" id="scenarios-wrap">
+          <button class="scenarios-btn" onclick="toggleScenarios()">
+            <svg viewBox="0 0 16 16" fill="currentColor"><path d="M5.52.359A.5.5 0 0 1 6 0h4a.5.5 0 0 1 .474.658L8.694 6H12.5a.5.5 0 0 1 .395.807l-7 9a.5.5 0 0 1-.873-.454L6.823 10H3.5a.5.5 0 0 1-.48-.641l2.5-9z"/></svg>
+            Sample Scenarios ▾
+          </button>
+          <div class="scenarios-dropdown" id="scenarios-dropdown">
+            <div class="scenario-item" onclick="runScenario('cve-demo')">
+              <div class="scenario-icon" style="background:rgba(248,81,73,0.15);border:1px solid rgba(248,81,73,0.3);">🔥</div>
+              <div>
+                <div class="scenario-title">CVE Remediation Demo</div>
+                <div class="scenario-desc">Patches encryptMD5 → encryptSHA256 across mock-target. Shows 2 call sites refactored, MED blast radius, spec drift fixed.</div>
               </div>
-              <div class="scenario-item" onclick="runScenario('blast-demo')">
-                <div class="scenario-icon" style="background:rgba(88,166,255,0.15);border:1px solid rgba(88,166,255,0.3);">💥</div>
-                <div>
-                  <div class="scenario-title">Blast Radius Audit Demo</div>
-                  <div class="scenario-desc">AST call-graph traversal across mock-target changed files. Identifies transitive callers and breaking signatures.</div>
-                </div>
+            </div>
+            <div class="scenario-item" onclick="runScenario('blast-demo')">
+              <div class="scenario-icon" style="background:rgba(88,166,255,0.15);border:1px solid rgba(88,166,255,0.3);">💥</div>
+              <div>
+                <div class="scenario-title">Blast Radius Audit Demo</div>
+                <div class="scenario-desc">AST call-graph traversal across mock-target changed files. Identifies transitive callers and breaking signatures.</div>
               </div>
             </div>
           </div>
-          <button class="btn btn-primary" id="btn-cve" onclick="runPipeline('CVE_ADVISORY')">
-            <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm-.5 3.5v4h1v-4h-1zm0 5.5h1v1h-1v-1z"/></svg>
-            Run CVE Pipeline
-          </button>
-          <button class="btn btn-secondary" id="btn-blast" onclick="runPipeline('GIT_DIFF')">
-            <svg viewBox="0 0 16 16" fill="currentColor"><path d="M6 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 0 1H9.707l7.147 7.146-.708.708L9 4.707V9.5a.5.5 0 0 1-1 0v-6z"/></svg>
-            Blast-Radius Audit
-          </button>
         </div>
+
+        <button class="btn btn-primary" id="btn-cve" onclick="runFromUrl('CVE_ADVISORY')">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm-.5 3.5v4h1v-4h-1zm0 5.5h1v1h-1v-1z"/></svg>
+          Run CVE Pipeline
+        </button>
+        <button class="btn btn-secondary" id="btn-blast" onclick="runFromUrl('GIT_DIFF')">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M6 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 0 1H9.707l7.147 7.146-.708.708L9 4.707V9.5a.5.5 0 0 1-1 0v-6z"/></svg>
+          AST Blast-Radius Audit
+        </button>
+
+        <span id="ext-status" style="font-size:12px;color:var(--muted);margin-left:4px;"></span>
       </div>
+
       <!-- Progress bar (hidden by default) -->
       <div id="progress-bar" style="display:none;margin-top:14px;">
         <div style="font-size:11px;color:var(--muted);margin-bottom:6px;" id="progress-label">Running pipeline…</div>
@@ -507,37 +520,16 @@
       </div>
     </div>
 
-    <!-- External Repo Panel -->
+    <!-- ── ZIP Upload panel ── -->
     <div class="card" style="padding:20px 24px;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-        <svg viewBox="0 0 16 16" fill="currentColor" style="width:14px;height:14px;color:var(--muted);"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
-        <span class="section-head" style="margin-bottom:0;">External Repository Audit</span>
-        <span style="margin-left:auto;font-size:11px;color:var(--muted);">Analyse any GitHub repo or ZIP archive</span>
+        <svg viewBox="0 0 16 16" fill="currentColor" style="width:14px;height:14px;color:var(--muted);"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/></svg>
+        <span class="section-head" style="margin-bottom:0;">Upload ZIP Archive</span>
+        <span style="margin-left:auto;font-size:11px;color:var(--muted);">Analyse a local project as a ZIP (max 50 MB)</span>
       </div>
 
-      <div class="ext-tab-bar">
-        <button id="ext-tab-url" class="ext-tab active" onclick="switchExtTab('url')">GitHub URL</button>
-        <button id="ext-tab-zip" class="ext-tab" onclick="switchExtTab('zip')">Upload ZIP</button>
-      </div>
-
-      <div id="ext-panel-url" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
         <div style="flex:1;min-width:260px;">
-          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Repository URL</label>
-          <input id="github-url" class="repo-input" type="url" placeholder="https://github.com/owner/repo" />
-        </div>
-        <div style="width:130px;">
-          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Branch</label>
-          <input id="github-branch" class="repo-input" type="text" placeholder="main" />
-        </div>
-        <div style="display:flex;gap:8px;">
-          <button class="btn btn-purple" id="btn-clone-cve" onclick="runClone('CVE_ADVISORY')">CVE Audit</button>
-          <button class="btn btn-secondary" id="btn-clone-blast" onclick="runClone('GIT_DIFF')">Blast Audit</button>
-        </div>
-      </div>
-
-      <div id="ext-panel-zip" style="display:none;gap:10px;flex-wrap:wrap;align-items:flex-end;">
-        <div style="flex:1;min-width:260px;">
-          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">ZIP Archive (max 50 MB)</label>
           <div class="drop-zone" id="zip-drop-zone"
                onclick="document.getElementById('zip-input').click()"
                ondragover="event.preventDefault();this.classList.add('drag-over')"
@@ -555,7 +547,7 @@
           <button class="btn btn-secondary" id="btn-zip-blast" onclick="runZipUpload('GIT_DIFF')">Blast Audit</button>
         </div>
       </div>
-      <div id="ext-status" style="margin-top:10px;font-size:12px;color:var(--muted);min-height:16px;"></div>
+      <div id="zip-status" style="margin-top:10px;font-size:12px;color:var(--muted);min-height:16px;"></div>
     </div>
 
     <!-- Risk + Metrics row -->

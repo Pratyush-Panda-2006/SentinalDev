@@ -310,21 +310,37 @@ function setLoading(loading) {
   const btnBlast = document.getElementById('btn-blast');
   const badge    = document.getElementById('target-badge');
 
-  btnCve.disabled   = loading;
-  btnBlast.disabled = loading;
+  if (btnCve)   btnCve.disabled   = loading;
+  if (btnBlast) btnBlast.disabled = loading;
 
   if (loading) {
-    btnCve.innerHTML   = '<span class="spinner"></span> Running…';
-    btnBlast.innerHTML = '<span class="spinner"></span> Running…';
-    badge.className    = 'badge badge-amber';
-    badge.textContent  = '● Running pipeline…';
+    if (btnCve)   btnCve.innerHTML   = '<span class="spinner"></span> Running…';
+    if (btnBlast) btnBlast.innerHTML = '<span class="spinner"></span> Running…';
+    if (badge) { badge.className = 'badge badge-amber'; badge.textContent = '● Running pipeline…'; }
   } else {
-    btnCve.innerHTML   = '▶ Run CVE Pipeline';
-    btnBlast.innerHTML = '◎ AST Blast-Radius Audit';
+    if (btnCve)   btnCve.innerHTML   = '▶ Run CVE Pipeline';
+    if (btnBlast) btnBlast.innerHTML = '◎ AST Blast-Radius Audit';
   }
 }
 
-// ─── Main pipeline runner ─────────────────────────────────────────────────────
+// ─── URL-aware runner (primary entry point for all pipeline buttons) ──────────
+// If a GitHub URL is present → clone & run via /api/clone-repo.
+// If blank                   → run against mock-target via /api/run-pipeline.
+
+async function runFromUrl(triggerKind) {
+  const url    = (document.getElementById('github-url')    || {}).value?.trim() || '';
+  const branch = (document.getElementById('github-branch') || {}).value?.trim() || '';
+
+  if (url) {
+    // Delegate to the clone runner which handles cloning + full pipeline
+    await runClone(triggerKind, url, branch);
+  } else {
+    // No URL — use the built-in mock-target demo
+    await runPipeline(triggerKind);
+  }
+}
+
+// ─── Mock-target pipeline runner (demo / no URL) ─────────────────────────────
 
 async function runPipeline(triggerKind) {
   if (isRunning) return;
@@ -332,24 +348,19 @@ async function runPipeline(triggerKind) {
   setLoading(true);
   showProgress('Initialising pipeline…');
 
-  const repoPath = document.getElementById('repo-path').value.trim();
-
   // Pre-clear terminal
   const term = document.getElementById('terminal-output');
   term.textContent = '';
   pushLog('Connecting to SentinelDev server…', 'muted');
-  pushLog(`Trigger: ${triggerKind}${repoPath ? ' | repo: ' + repoPath : ' | repo: mock-target (demo)'}`, 'muted');
+  pushLog(`Trigger: ${triggerKind} | repo: mock-target (demo)`, 'muted');
 
   try {
-    const body = { triggerKind };
-    if (repoPath) body.repoPath = repoPath;
-
     advanceProgress(30, 'Running agents…');
 
-    const res  = await fetchWithTimeout('/api/run-pipeline', {
+    const res = await fetchWithTimeout('/api/run-pipeline', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(body),
+      body:    JSON.stringify({ triggerKind }),
     });
 
     const data = await res.json();
@@ -363,34 +374,7 @@ async function runPipeline(triggerKind) {
     }
 
     advanceProgress(90, 'Rendering results…');
-
-    const report = data.report;
-
-    // Update metrics
-    updateMetrics(report);
-
-    // Synthesise terminal log
-    hydrateLogsFromReport(report, triggerKind);
-
-    // Call graph
-    const graphDef = report.blastRadius && report.blastRadius.callGraphTree.length > 0
-      ? buildMermaidDef(report.blastRadius.callGraphTree)
-      : 'graph LR\n  A["api.ts"] --> B["userService.ts"]\n  A --> C["reportService.ts"]\n  B --> D["crypto-utils.ts"]\n  C --> D';
-    await renderMermaid(graphDef);
-
-    // Diff tab
-    const diffPatch = report.remediation?.patch || report.gitDiff || '';
-    document.getElementById('diff-container').innerHTML = renderDiff(diffPatch);
-
-    // Spec tab
-    document.getElementById('spec-container').innerHTML = renderSpecTable(report.docSync);
-
-    // Breaking signatures tab
-    document.getElementById('breaking-container').innerHTML = renderBreakingTable(report.blastRadius);
-
-    // Flash nav log dot
-    document.getElementById('nav-log-dot').className = 'status-dot dot-green';
-
+    await applyReport(data.report, triggerKind, 'mock-target (demo)');
     hideProgress();
 
   } catch (err) {
@@ -429,31 +413,13 @@ mermaid.initialize({
 
 // ─── External repo panel ──────────────────────────────────────────────────────
 
-function switchExtTab(tab) {
-  const urlPanel = document.getElementById('ext-panel-url');
-  const zipPanel = document.getElementById('ext-panel-zip');
-  const urlBtn   = document.getElementById('ext-tab-url');
-  const zipBtn   = document.getElementById('ext-tab-zip');
-
-  if (tab === 'url') {
-    urlPanel.style.display = 'flex';
-    zipPanel.style.display = 'none';
-    urlBtn.style.background = 'var(--accent)';
-    urlBtn.style.color      = '#0d1117';
-    zipBtn.style.background = 'transparent';
-    zipBtn.style.color      = 'var(--muted)';
-  } else {
-    urlPanel.style.display = 'none';
-    zipPanel.style.display = 'flex';
-    zipBtn.style.background = 'var(--accent)';
-    zipBtn.style.color      = '#0d1117';
-    urlBtn.style.background = 'transparent';
-    urlBtn.style.color      = 'var(--muted)';
-  }
-}
-
 function setExtStatus(msg, color) {
   const el = document.getElementById('ext-status');
+  if (el) { el.textContent = msg; el.style.color = color || 'var(--muted)'; }
+}
+
+function setZipStatus(msg, color) {
+  const el = document.getElementById('zip-status');
   if (el) { el.textContent = msg; el.style.color = color || 'var(--muted)'; }
 }
 
@@ -469,7 +435,7 @@ function handleZipSelect(input) {
       <span style="color:var(--muted);font-size:11px;display:block;margin-top:2px;">${(file.size / 1024 / 1024).toFixed(2)} MB — ready to upload</span>`;
   }
   document.getElementById('zip-drop-zone').style.borderColor = 'var(--green)';
-  setExtStatus(`Staged: ${file.name}`, 'var(--green)');
+  setZipStatus(`Staged: ${file.name}`, 'var(--green)');
 }
 
 function handleZipDrop(event) {
@@ -478,7 +444,7 @@ function handleZipDrop(event) {
   const file = event.dataTransfer.files && event.dataTransfer.files[0];
   if (!file) return;
   if (!file.name.endsWith('.zip')) {
-    setExtStatus('Only .zip files are accepted', 'var(--red)');
+    setZipStatus('Only .zip files are accepted', 'var(--red)');
     return;
   }
   // Programmatically set the file on the input so handleZipSelect fires
@@ -492,7 +458,7 @@ function handleZipDrop(event) {
 // ─── All-buttons loading helper ───────────────────────────────────────────────
 
 function setAllBusy(busy) {
-  const ids = ['btn-cve','btn-blast','btn-clone-cve','btn-clone-blast','btn-zip-cve','btn-zip-blast'];
+  const ids = ['btn-cve','btn-blast','btn-zip-cve','btn-zip-blast'];
   ids.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.disabled = busy;
@@ -525,10 +491,7 @@ async function applyReport(report, triggerKind, sourceLabel) {
 
 // ─── GitHub URL clone runner ─────────────────────────────────────────────────
 
-async function runClone(triggerKind) {
-  const url    = document.getElementById('github-url').value.trim();
-  const branch = document.getElementById('github-branch').value.trim();
-
+async function runClone(triggerKind, url, branch) {
   if (!url) {
     setExtStatus('Please enter a GitHub repository URL', 'var(--red)');
     return;
@@ -555,7 +518,7 @@ async function runClone(triggerKind) {
 
     advanceProgress(25, 'Waiting for clone…');
 
-    const res  = await fetchWithTimeout('/api/clone-repo', {
+    const res = await fetchWithTimeout('/api/clone-repo', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify(body),
@@ -588,13 +551,13 @@ async function runClone(triggerKind) {
 
 async function runZipUpload(triggerKind) {
   if (!stagedZipFile) {
-    setExtStatus('Please select a ZIP file first', 'var(--red)');
+    setZipStatus('Please select a ZIP file first', 'var(--red)');
     return;
   }
   if (isRunning) return;
   isRunning = true;
   setAllBusy(true);
-  setExtStatus('Uploading and extracting ZIP…', 'var(--amber)');
+  setZipStatus('Uploading and extracting ZIP…', 'var(--amber)');
   showProgress('Uploading ZIP…');
 
   const term = document.getElementById('terminal-output');
@@ -613,18 +576,18 @@ async function runZipUpload(triggerKind) {
     const data = await res.json();
 
     if (!res.ok || !data.ok) {
-      setExtStatus('Error: ' + (data.error || 'Upload failed'), 'var(--red)');
+      setZipStatus('Error: ' + (data.error || 'Upload failed'), 'var(--red)');
       pushLog('Upload error: ' + (data.error || 'Unknown'), 'err');
       hideProgress();
       return;
     }
 
     advanceProgress(90, 'Rendering results…');
-    setExtStatus(`✓ Extracted "${data.repoName}" — pipeline complete`, 'var(--green)');
+    setZipStatus(`✓ Extracted "${data.repoName}" — pipeline complete`, 'var(--green)');
     await applyReport(data.report, triggerKind, `zip: ${data.repoName}`);
     hideProgress();
   } catch (err) {
-    setExtStatus('Network error: ' + err.message, 'var(--red)');
+    setZipStatus('Network error: ' + err.message, 'var(--red)');
     pushLog('Network error: ' + err.message, 'err');
     hideProgress();
   } finally {
@@ -653,8 +616,10 @@ function toggleScenarios() {
 
 function runScenario(scenarioId) {
   document.getElementById('scenarios-dropdown').classList.remove('open');
-  // Clear the custom repo path so we use mock-target
-  document.getElementById('repo-path').value = '';
+  // Clear the URL so scenarios always run against mock-target
+  const urlInput = document.getElementById('github-url');
+  if (urlInput) urlInput.value = '';
+  setExtStatus('');
 
   if (scenarioId === 'cve-demo') {
     runPipeline('CVE_ADVISORY');
