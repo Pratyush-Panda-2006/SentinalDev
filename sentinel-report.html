@@ -33,7 +33,7 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: #f59e0b;
+      background: #ef4444;
       color: #fff;
       border-radius: 8px;
       padding: 6px 16px;
@@ -75,8 +75,8 @@
     .section-title { font-size: 14px; font-weight: 600; color: #1f2328; }
     .section-body { padding: 20px; }
     .risk-banner {
-      background: #fffbeb;
-      border: 1px solid #fcd34d;
+      background: #fef2f2;
+      border: 1px solid #fca5a5;
       border-radius: 10px;
       padding: 16px 20px;
       margin-bottom: 20px;
@@ -87,10 +87,10 @@
     .risk-banner-score {
       font-size: 18px;
       font-weight: 800;
-      color: #92400e;
+      color: #991b1b;
       white-space: nowrap;
     }
-    .risk-banner-body { color: #92400e; font-size: 13px; line-height: 1.5; }
+    .risk-banner-body { color: #991b1b; font-size: 13px; line-height: 1.5; }
     .mermaid-wrap {
       background: #fafafa;
       border: 1px solid #e5e7eb;
@@ -154,35 +154,35 @@
       <div>
         <div class="header-title">🛡️ SentinelDev Pipeline Report</div>
         <div class="header-sub">CVE Advisory — CVE-2024-DEMO01 (crypto-utils)</div>
-        <div class="header-ts">Completed: 2026-09-26T17:36:17.189Z</div>
+        <div class="header-ts">Completed: 2026-09-26T17:39:14.190Z</div>
       </div>
-      <div class="score-badge">⚡ MED</div>
+      <div class="score-badge">⚡ CRITICAL</div>
     </div>
 
     <!-- Risk Banner -->
     <div class="risk-banner">
-      <div class="risk-banner-score">BLAST RADIUS: MED</div>
+      <div class="risk-banner-score">BLAST RADIUS: CRITICAL</div>
       <div class="risk-banner-body">
-        1 file(s) impacted &nbsp;·&nbsp; 4 breaking signature(s) detected
+        19 file(s) impacted &nbsp;·&nbsp; 49 breaking signature(s) detected
       </div>
     </div>
 
     <!-- Quick Metrics -->
     <div class="metrics">
       <div class="metric-card">
-        <div class="metric-value">2</div>
+        <div class="metric-value">0</div>
         <div class="metric-label">Call Sites Patched</div>
       </div>
       <div class="metric-card">
-        <div class="metric-value">1</div>
+        <div class="metric-value">19</div>
         <div class="metric-label">Files Impacted</div>
       </div>
       <div class="metric-card">
-        <div class="metric-value">1</div>
+        <div class="metric-value">0</div>
         <div class="metric-label">Endpoints Synced</div>
       </div>
       <div class="metric-card">
-        <div class="metric-value">4</div>
+        <div class="metric-value">49</div>
         <div class="metric-label">Breaking Signatures</div>
       </div>
     </div>
@@ -197,18 +197,99 @@
         <div class="mermaid-wrap">
           <div class="mermaid">
 graph LR
+  api_ts_get[&quot;api.ts\nget()&quot;] --&gt; api_ts__module_[&quot;api.ts&quot;]
+  api_ts__module_[&quot;api.ts&quot;] --&gt; api_ts_post[&quot;api.ts\npost()&quot;]
+  api_ts__module_[&quot;api.ts&quot;] --&gt; api_ts__module_[&quot;api.ts&quot;]
+  userService_ts__module_[&quot;userService.ts&quot;] --&gt; crypto_utils_ts_encryptMD5[&quot;crypto-utils.ts\nencryptMD5()&quot;]
+  crypto_utils_ts_encryptMD5[&quot;crypto-utils.ts\nencryptMD5()&quot;] --&gt; reportService_ts__module_[&quot;reportService.ts&quot;]
   reportService_ts_buildReport[&quot;reportService.ts\nbuildReport()&quot;] --&gt; reportService_ts_signReport[&quot;reportService.ts\nsignReport()&quot;]
   api_ts__module_[&quot;api.ts&quot;] --&gt; api_ts__anonymous_[&quot;api.ts\n&lt;anonymous&gt;()&quot;]
   api_ts__anonymous_[&quot;api.ts\n&lt;anonymous&gt;()&quot;] --&gt; reportService_ts_buildReport[&quot;reportService.ts\nbuildReport()&quot;]
   userService_ts_getUsers[&quot;userService.ts\ngetUsers()&quot;] --&gt; userService_ts_hashUserId[&quot;userService.ts\nhashUserId()&quot;]
   api_ts__anonymous_[&quot;api.ts\n&lt;anonymous&gt;()&quot;] --&gt; userService_ts_getUsers[&quot;userService.ts\ngetUsers()&quot;]
+  orchestrator_ts__module_[&quot;orchestrator.ts&quot;] --&gt; orchestrator_ts_runPipeline[&quot;orchestrator.ts\nrunPipeline()&quot;]
+  orchestrator_ts_runPipeline[&quot;orchestrator.ts\nrunPipeline()&quot;] --&gt; autoRemediator_ts_runRemediation[&quot;autoRemediator.ts\nrunRemediation()&quot;]
+  orchestrator_ts_runPipeline[&quot;orchestrator.ts\nrunPipeline()&quot;] --&gt; orchestrator_ts_runPipeline[&quot;orchestrator.ts\nrunPipeline()&quot;]
+  orchestrator_ts_runPipeline[&quot;orchestrator.ts\nrunPipeline()&quot;] --&gt; blastRadiusAuditor_ts_runBlastRadiusAudi[&quot;blastRadiusAuditor.ts\nrunBlastRadiusAudit()&quot;]
+  orchestrator_ts_runPipeline[&quot;orchestrator.ts\nrunPipeline()&quot;] --&gt; docuSync_ts_runDocuSync[&quot;docuSync.ts\nrunDocuSync()&quot;]
+  app_ts__module_[&quot;app.ts&quot;] --&gt; app_ts__module_[&quot;app.ts&quot;]
+  app_ts__module_[&quot;app.ts&quot;] --&gt; app_ts_server[&quot;app.ts\nserver()&quot;]
+  app_ts_server[&quot;app.ts\nserver()&quot;] --&gt; app_ts_server[&quot;app.ts\nserver()&quot;]
+  app_ts_server[&quot;app.ts\nserver()&quot;] --&gt; orchestrator_ts_runPipeline[&quot;orchestrator.ts\nrunPipeline()&quot;]
+  app_ts_server[&quot;app.ts\nserver()&quot;] --&gt; index_ts__module_[&quot;index.ts&quot;]
+  app_ts_server[&quot;app.ts\nserver()&quot;] --&gt; index_ts_main[&quot;index.ts\nmain()&quot;]
+  orchestrator_ts_runPipeline[&quot;orchestrator.ts\nrunPipeline()&quot;] --&gt; orchestrator_ts__module_[&quot;orchestrator.ts&quot;]
+  orchestrator_ts_runPipeline[&quot;orchestrator.ts\nrunPipeline()&quot;] --&gt; htmlReporter_ts_generateHtmlReport[&quot;htmlReporter.ts\ngenerateHtmlReport()&quot;]
+  orchestrator_ts_runPipeline[&quot;orchestrator.ts\nrunPipeline()&quot;] --&gt; prCommentReporter_ts_generatePrComment[&quot;prCommentReporter.ts\ngeneratePrComment()&quot;]
+  app_ts_server[&quot;app.ts\nserver()&quot;] --&gt; seed_ts_seedMockTarget[&quot;seed.ts\nseedMockTarget()&quot;]
+  blastRadiusAuditor_ts__module_[&quot;blastRadiusAuditor.ts&quot;] --&gt; blastRadiusAuditor_ts_runBlastRadiusAudi[&quot;blastRadiusAuditor.ts\nrunBlastRadiusAudit()&quot;]
+  blastRadiusAuditor_ts_runBlastRadiusAudi[&quot;blastRadiusAuditor.ts\nrunBlastRadiusAudit()&quot;] --&gt; blastRadiusService_ts_analyzeBlastRadius[&quot;blastRadiusService.ts\nanalyzeBlastRadius()&quot;]
+  autoRemediator_ts__module_[&quot;autoRemediator.ts&quot;] --&gt; autoRemediator_ts_runRemediation[&quot;autoRemediator.ts\nrunRemediation()&quot;]
+  autoRemediator_ts_runRemediation[&quot;autoRemediator.ts\nrunRemediation()&quot;] --&gt; cveRemediationService_ts_remediateCVE[&quot;cveRemediationService.ts\nremediateCVE()&quot;]
+  docuSync_ts__module_[&quot;docuSync.ts&quot;] --&gt; docuSync_ts_runDocuSync[&quot;docuSync.ts\nrunDocuSync()&quot;]
+  docuSync_ts_runDocuSync[&quot;docuSync.ts\nrunDocuSync()&quot;] --&gt; docuSyncService_ts_syncDocs[&quot;docuSyncService.ts\nsyncDocs()&quot;]
+  app_ts_server[&quot;app.ts\nserver()&quot;] --&gt; gitService_ts_inspectRepoChanges[&quot;gitService.ts\ninspectRepoChanges()&quot;]
+  gitService_ts_inspectRepoChanges[&quot;gitService.ts\ninspectRepoChanges()&quot;] --&gt; gitService_ts__module_[&quot;gitService.ts&quot;]
+  app_ts_server[&quot;app.ts\nserver()&quot;] --&gt; repoIngestionService_ts_cleanupSandbox[&quot;repoIngestionService.ts\ncleanupSandbox()&quot;]
+  repoIngestionService_ts_cloneRepository[&quot;repoIngestionService.ts\ncloneRepository()&quot;] --&gt; repoIngestionService_ts_isValidGitUrl[&quot;repoIngestionService.ts\nisValidGitUrl()&quot;]
+  repoIngestionService_ts_isValidGitUrl[&quot;repoIngestionService.ts\nisValidGitUrl()&quot;] --&gt; app_ts__module_[&quot;app.ts&quot;]
+  repoIngestionService_ts_isValidGitUrl[&quot;repoIngestionService.ts\nisValidGitUrl()&quot;] --&gt; app_ts_server[&quot;app.ts\nserver()&quot;]
+  app_ts_server[&quot;app.ts\nserver()&quot;] --&gt; repoIngestionService_ts_cloneRepository[&quot;repoIngestionService.ts\ncloneRepository()&quot;]
+  app_ts_server[&quot;app.ts\nserver()&quot;] --&gt; repoIngestionService_ts_extractZip[&quot;repoIngestionService.ts\nextractZip()&quot;]
+  app_ts_server[&quot;app.ts\nserver()&quot;] --&gt; repoIngestionService_ts_parseMultipartUp[&quot;repoIngestionService.ts\nparseMultipartUpload()&quot;]
+  repoIngestionService_ts_cloneRepository[&quot;repoIngestionService.ts\ncloneRepository()&quot;] --&gt; repoIngestionService_ts__module_[&quot;repoIngestionService.ts&quot;]
+  repoIngestionService_ts_parseMultipartUp[&quot;repoIngestionService.ts\nparseMultipartUpload()&quot;] --&gt; repoIngestionService_ts__module_[&quot;repoIngestionService.ts&quot;]
+  index_ts__module_[&quot;index.ts&quot;] --&gt; index_ts__module_[&quot;index.ts&quot;]
+  index_ts__module_[&quot;index.ts&quot;] --&gt; app_ts__module_[&quot;app.ts&quot;]
+  index_ts__module_[&quot;index.ts&quot;] --&gt; app_ts_buildBlastTrigger[&quot;app.ts\nbuildBlastTrigger()&quot;]
+  cveRemediationService_ts__module_[&quot;cveRemediationService.ts&quot;] --&gt; cveRemediationService_ts_remediateCVE[&quot;cveRemediationService.ts\nremediateCVE()&quot;]
+  cveRemediationService_ts_remediateCVE[&quot;cveRemediationService.ts\nremediateCVE()&quot;] --&gt; index_ts__module_[&quot;index.ts&quot;]
+  cveRemediationService_ts_remediateCVE[&quot;cveRemediationService.ts\nremediateCVE()&quot;] --&gt; autoRemediator_ts__module_[&quot;autoRemediator.ts&quot;]
+  cveRemediationService_ts_remediateCVE[&quot;cveRemediationService.ts\nremediateCVE()&quot;] --&gt; autoRemediator_ts_runRemediation[&quot;autoRemediator.ts\nrunRemediation()&quot;]
+  cveRemediationService_ts_remediateCVE[&quot;cveRemediationService.ts\nremediateCVE()&quot;] --&gt; app_ts_buildCveTrigger[&quot;app.ts\nbuildCveTrigger()&quot;]
+  cveRemediationService_ts_remediateCVE[&quot;cveRemediationService.ts\nremediateCVE()&quot;] --&gt; app_ts_server[&quot;app.ts\nserver()&quot;]
+  cveRemediationService_ts_remediateCVE[&quot;cveRemediationService.ts\nremediateCVE()&quot;] --&gt; index_ts_buildDemoTrigger[&quot;index.ts\nbuildDemoTrigger()&quot;]
+  index_ts__module_[&quot;index.ts&quot;] --&gt; blastRadiusAuditor_ts__module_[&quot;blastRadiusAuditor.ts&quot;]
+  blastRadiusAuditor_ts__module_[&quot;blastRadiusAuditor.ts&quot;] --&gt; docuSyncService_ts__module_[&quot;docuSyncService.ts&quot;]
+  blastRadiusAuditor_ts__module_[&quot;blastRadiusAuditor.ts&quot;] --&gt; docuSync_ts__module_[&quot;docuSync.ts&quot;]
+  blastRadiusAuditor_ts__module_[&quot;blastRadiusAuditor.ts&quot;] --&gt; docuSync_ts_runDocuSync[&quot;docuSync.ts\nrunDocuSync()&quot;]
+  blastRadiusAuditor_ts__module_[&quot;blastRadiusAuditor.ts&quot;] --&gt; orchestrator_ts__module_[&quot;orchestrator.ts&quot;]
+  blastRadiusAuditor_ts__module_[&quot;blastRadiusAuditor.ts&quot;] --&gt; orchestrator_ts_runPipeline[&quot;orchestrator.ts\nrunPipeline()&quot;]
+  blastRadiusAuditor_ts__module_[&quot;blastRadiusAuditor.ts&quot;] --&gt; index_ts_main[&quot;index.ts\nmain()&quot;]
+  index_ts__module_[&quot;index.ts&quot;] --&gt; blastRadiusService_ts__module_[&quot;blastRadiusService.ts&quot;]
+  index_ts__module_[&quot;index.ts&quot;] --&gt; blastRadiusService_ts_scoreFromCount[&quot;blastRadiusService.ts\nscoreFromCount()&quot;]
+  index_ts__module_[&quot;index.ts&quot;] --&gt; htmlReporter_ts__module_[&quot;htmlReporter.ts&quot;]
+  index_ts__module_[&quot;index.ts&quot;] --&gt; htmlReporter_ts_generateHtmlReport[&quot;htmlReporter.ts\ngenerateHtmlReport()&quot;]
+  index_ts__module_[&quot;index.ts&quot;] --&gt; prCommentReporter_ts__module_[&quot;prCommentReporter.ts&quot;]
+  index_ts__module_[&quot;index.ts&quot;] --&gt; prCommentReporter_ts_scoreEmoji[&quot;prCommentReporter.ts\nscoreEmoji()&quot;]
+  index_ts__module_[&quot;index.ts&quot;] --&gt; prCommentReporter_ts_generatePrComment[&quot;prCommentReporter.ts\ngeneratePrComment()&quot;]
+  index_ts__module_[&quot;index.ts&quot;] --&gt; blastRadiusService_ts_buildCallTree[&quot;blastRadiusService.ts\nbuildCallTree()&quot;]
+  index_ts__module_[&quot;index.ts&quot;] --&gt; blastRadiusService_ts_collectImpactedFil[&quot;blastRadiusService.ts\ncollectImpactedFiles()&quot;]
+  index_ts__module_[&quot;index.ts&quot;] --&gt; blastRadiusService_ts_walk[&quot;blastRadiusService.ts\nwalk()&quot;]
+  index_ts__module_[&quot;index.ts&quot;] --&gt; blastRadiusService_ts_collectBreakingSig[&quot;blastRadiusService.ts\ncollectBreakingSignatures()&quot;]
+  index_ts__module_[&quot;index.ts&quot;] --&gt; blastRadiusService_ts_analyzeBlastRadius[&quot;blastRadiusService.ts\nanalyzeBlastRadius()&quot;]
+  index_ts__module_[&quot;index.ts&quot;] --&gt; htmlReporter_ts_buildMermaidGraph[&quot;htmlReporter.ts\nbuildMermaidGraph()&quot;]
+  index_ts__module_[&quot;index.ts&quot;] --&gt; htmlReporter_ts_walk[&quot;htmlReporter.ts\nwalk()&quot;]
+  index_ts__module_[&quot;index.ts&quot;] --&gt; prCommentReporter_ts_renderCallGraphMd[&quot;prCommentReporter.ts\nrenderCallGraphMd()&quot;]
+  index_ts__module_[&quot;index.ts&quot;] --&gt; blastRadiusAuditor_ts_runBlastRadiusAudi[&quot;blastRadiusAuditor.ts\nrunBlastRadiusAudit()&quot;]
+  index_ts__module_[&quot;index.ts&quot;] --&gt; orchestrator_ts__module_[&quot;orchestrator.ts&quot;]
+  index_ts__module_[&quot;index.ts&quot;] --&gt; orchestrator_ts_runPipeline[&quot;orchestrator.ts\nrunPipeline()&quot;]
+  index_ts__module_[&quot;index.ts&quot;] --&gt; cveRemediationService_ts_remediateCVE[&quot;cveRemediationService.ts\nremediateCVE()&quot;]
+  index_ts__module_[&quot;index.ts&quot;] --&gt; autoRemediator_ts_runRemediation[&quot;autoRemediator.ts\nrunRemediation()&quot;]
+  index_ts__module_[&quot;index.ts&quot;] --&gt; docuSyncService_ts_syncDocs[&quot;docuSyncService.ts\nsyncDocs()&quot;]
+  index_ts__module_[&quot;index.ts&quot;] --&gt; docuSync_ts_runDocuSync[&quot;docuSync.ts\nrunDocuSync()&quot;]
+  htmlReporter_ts__module_[&quot;htmlReporter.ts&quot;] --&gt; htmlReporter_ts_renderSpecTable[&quot;htmlReporter.ts\nrenderSpecTable()&quot;]
+  htmlReporter_ts_renderSpecTable[&quot;htmlReporter.ts\nrenderSpecTable()&quot;] --&gt; htmlReporter_ts_renderBreakingSignatures[&quot;htmlReporter.ts\nrenderBreakingSignatures()&quot;]
+  htmlReporter_ts_renderSpecTable[&quot;htmlReporter.ts\nrenderSpecTable()&quot;] --&gt; index_ts__module_[&quot;index.ts&quot;]
+  htmlReporter_ts_renderSpecTable[&quot;htmlReporter.ts\nrenderSpecTable()&quot;] --&gt; orchestrator_ts__module_[&quot;orchestrator.ts&quot;]
+  htmlReporter_ts_renderSpecTable[&quot;htmlReporter.ts\nrenderSpecTable()&quot;] --&gt; orchestrator_ts_runPipeline[&quot;orchestrator.ts\nrunPipeline()&quot;]
           </div>
         </div>
         
         <div style="margin-top:16px;">
           <div style="font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Impacted Files</div>
           <ul class="impacted-list">
-            <li>api.ts</li>
+            <li>api.ts</li><li>userService.ts</li><li>crypto-utils.ts</li><li>reportService.ts</li><li>orchestrator.ts</li><li>autoRemediator.ts</li><li>blastRadiusAuditor.ts</li><li>docuSync.ts</li><li>app.ts</li><li>index.ts</li><li>htmlReporter.ts</li><li>prCommentReporter.ts</li><li>seed.ts</li><li>blastRadiusService.ts</li><li>cveRemediationService.ts</li><li>docuSyncService.ts</li><li>gitService.ts</li><li>repoIngestionService.ts</li><li>index.ts</li>
           </ul>
         </div>
       </div>
@@ -230,6 +311,15 @@ graph LR
         </tr>
       </thead>
       <tbody><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">api.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">post</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">api.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">&lt;module&gt;</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">reportService.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">&lt;module&gt;</td>
+    </tr><tr>
       <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">reportService.ts</td>
       <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">signReport</td>
     </tr><tr>
@@ -241,6 +331,132 @@ graph LR
     </tr><tr>
       <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">userService.ts</td>
       <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">getUsers</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">autoRemediator.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">runRemediation</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">orchestrator.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">runPipeline</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">blastRadiusAuditor.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">runBlastRadiusAudit</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">docuSync.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">runDocuSync</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">app.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">&lt;module&gt;</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">app.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">server</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">index.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">&lt;module&gt;</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">index.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">main</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">orchestrator.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">&lt;module&gt;</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">htmlReporter.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">generateHtmlReport</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">prCommentReporter.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">generatePrComment</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">seed.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">seedMockTarget</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">blastRadiusService.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">analyzeBlastRadius</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">cveRemediationService.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">remediateCVE</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">docuSyncService.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">syncDocs</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">gitService.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">inspectRepoChanges</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">gitService.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">&lt;module&gt;</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">repoIngestionService.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">cleanupSandbox</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">repoIngestionService.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">cloneRepository</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">repoIngestionService.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">extractZip</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">repoIngestionService.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">parseMultipartUpload</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">repoIngestionService.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">&lt;module&gt;</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">app.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">buildBlastTrigger</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">index.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">&lt;module&gt;</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">autoRemediator.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">&lt;module&gt;</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">app.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">buildCveTrigger</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">index.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">buildDemoTrigger</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">docuSyncService.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">&lt;module&gt;</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">docuSync.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">&lt;module&gt;</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">blastRadiusService.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">&lt;module&gt;</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">blastRadiusService.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">scoreFromCount</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">htmlReporter.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">&lt;module&gt;</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">prCommentReporter.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">&lt;module&gt;</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">prCommentReporter.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">scoreEmoji</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">blastRadiusService.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">buildCallTree</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">blastRadiusService.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">collectImpactedFiles</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">blastRadiusService.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">walk</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">blastRadiusService.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">collectBreakingSignatures</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">htmlReporter.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">buildMermaidGraph</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">htmlReporter.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">walk</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">prCommentReporter.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">renderCallGraphMd</td>
+    </tr><tr>
+      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">htmlReporter.ts</td>
+      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">renderBreakingSignatures</td>
     </tr></tbody>
     </table>
       </div>
@@ -252,7 +468,7 @@ graph LR
       <div class="section-header">
         <span>🔧</span>
         <span class="section-title">CVE Remediation — CVE-2024-DEMO01</span>
-        <span class="trigger-pill">crypto-utils 1.2.0 → 2.0.0</span>
+        <span class="trigger-pill">crypto-utils 1.0.0 → 2.0.0</span>
       </div>
       <div class="section-body">
         <div style="margin-bottom:12px;display:flex;gap:24px;font-size:13px;">
@@ -260,7 +476,7 @@ graph LR
              <span style="color:#6b7280;margin:0 6px;">→</span>
              <span style="color:#3fb950;font-family:monospace;">encryptSHA256()</span></div>
         </div>
-        <div class="diff-viewer"><div class="diff-ctx">===================================================================</div><div class="diff-file">--- a/src\reportService.ts	original</div><div class="diff-file">+++ b/src\reportService.ts	patched</div><div class="diff-hunk">@@ -10,9 +10,9 @@</div><div class="diff-ctx">  * Generates a cryptographic signature for a report payload.</div><div class="diff-ctx">  * Currently uses encryptMD5 — flagged by CVE-2024-DEMO01.</div><div class="diff-ctx">  */</div><div class="diff-ctx"> export function signReport(payload: string): string {</div><div class="diff-del">-  return encryptMD5(payload);</div><div class="diff-add">+  return encryptSHA256(payload);</div><div class="diff-ctx"> }</div><div class="diff-ctx"> </div><div class="diff-ctx"> /**</div><div class="diff-ctx">  * Builds and signs a report object.</div><div class="diff-ctx"></div><div class="diff-ctx">===================================================================</div><div class="diff-file">--- a/src\userService.ts	original</div><div class="diff-file">+++ b/src\userService.ts	patched</div><div class="diff-hunk">@@ -10,9 +10,9 @@</div><div class="diff-ctx">  * Returns a stable hash for a given userId.</div><div class="diff-ctx">  * Currently uses encryptMD5 — flagged by CVE-2024-DEMO01.</div><div class="diff-ctx">  */</div><div class="diff-ctx"> export function hashUserId(userId: string): string {</div><div class="diff-del">-  return encryptMD5(userId);</div><div class="diff-add">+  return encryptSHA256(userId);</div><div class="diff-ctx"> }</div><div class="diff-ctx"> </div><div class="diff-ctx"> /**</div><div class="diff-ctx">  * Fetches a mock list of users with hashed IDs.</div><div class="diff-ctx"></div></div>
+        <div class="diff-viewer"><p style="color:#6b7280;font-style:italic;padding:12px 16px;">No changes recorded.</p></div>
       </div>
     </div>
 
@@ -272,26 +488,11 @@ graph LR
         <span class="trigger-pill">openapi.yaml</span>
       </div>
       <div class="section-body">
-        
-    <table style="width:100%;border-collapse:collapse;">
-      <thead>
-        <tr style="background:#f9fafb;border-bottom:2px solid #e5e7eb;">
-          <th style="padding:10px 14px;text-align:left;font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;">Method</th>
-          <th style="padding:10px 14px;text-align:left;font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;">Path</th>
-          <th style="padding:10px 14px;text-align:left;font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;">Change</th>
-        </tr>
-      </thead>
-      <tbody>
-    <tr>
-      <td style="padding:10px 14px;"><span style="background:#8b5cf6;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;">POST</span></td>
-      <td style="padding:10px 14px;font-family:monospace;font-size:13px;">/report</td>
-      <td style="padding:10px 14px;"><span style="background:#22c55e;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;text-transform:uppercase;">added</span></td>
-    </tr></tbody>
-    </table>
+        <p style="color:#6b7280;font-style:italic;padding:8px 0;">No endpoint changes detected.</p>
         
         <div style="margin-top:16px;">
           <div style="font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Schema Diff</div>
-          <div class="diff-viewer"><div class="diff-ctx">===================================================================</div><div class="diff-file">--- a/openapi.yaml	original</div><div class="diff-file">+++ b/openapi.yaml	patched</div><div class="diff-hunk">@@ -1,25 +1,23 @@</div><div class="diff-del">-openapi: &quot;3.0.3&quot;</div><div class="diff-add">+openapi: 3.0.3</div><div class="diff-ctx"> info:</div><div class="diff-ctx">   title: SentinelDev Mock API</div><div class="diff-del">-  version: &quot;1.0.0&quot;</div><div class="diff-add">+  version: 1.0.0</div><div class="diff-ctx">   description: &gt;</div><div class="diff-del">-    Mock API for the SentinelDev demo testbed.</div><div class="diff-del">-    NOTE: POST /report is intentionally absent — DocuSync will detect and add it.</div><div class="diff-del">-</div><div class="diff-add">+    Mock API for the SentinelDev demo testbed. NOTE: POST /report is intentionally absent — DocuSync will detect and add</div><div class="diff-add">+    it.</div><div class="diff-ctx"> servers:</div><div class="diff-ctx">   - url: http://localhost:3000</div><div class="diff-ctx">     description: Local development server</div><div class="diff-del">-</div><div class="diff-ctx"> paths:</div><div class="diff-ctx">   /users:</div><div class="diff-ctx">     get:</div><div class="diff-ctx">       summary: List all users</div><div class="diff-ctx">       operationId: getUsers</div><div class="diff-ctx">       tags:</div><div class="diff-ctx">         - Users</div><div class="diff-ctx">       responses:</div><div class="diff-del">-        &quot;200&quot;:</div><div class="diff-add">+        '200':</div><div class="diff-ctx">           description: A list of users with hashed IDs</div><div class="diff-ctx">           content:</div><div class="diff-ctx">             application/json:</div><div class="diff-ctx">               schema:</div><div class="diff-hunk">@@ -37,5 +35,14 @@</div><div class="diff-ctx">                           type: string</div><div class="diff-ctx">                           example: Alice</div><div class="diff-ctx">                         hashedId:</div><div class="diff-ctx">                           type: string</div><div class="diff-del">-                          example: &quot;5f4dcc3b5aa765d61d8327de...&quot;</div><div class="diff-add">+                          example: 5f4dcc3b5aa765d61d8327de...</div><div class="diff-add">+  /report:</div><div class="diff-add">+    post:</div><div class="diff-add">+      summary: POST /report</div><div class="diff-add">+      operationId: postreport</div><div class="diff-add">+      tags:</div><div class="diff-add">+        - report</div><div class="diff-add">+      responses:</div><div class="diff-add">+        '200':</div><div class="diff-add">+          description: Success</div><div class="diff-ctx"></div></div>
+          <div class="diff-viewer"><div class="diff-ctx">===================================================================</div><div class="diff-file">--- a/openapi.yaml	original</div><div class="diff-file">+++ b/openapi.yaml	patched</div><div class="diff-hunk">@@ -0,0 +1,6 @@</div><div class="diff-add">+openapi: 3.0.3</div><div class="diff-add">+info:</div><div class="diff-add">+  title: SentinalDev_1790444341627</div><div class="diff-add">+  version: 0.0.0</div><div class="diff-add">+  description: Auto-generated by SentinelDev DocuSync</div><div class="diff-add">+paths: {}</div><div class="diff-ctx"></div></div>
         </div>
       </div>
     </div>
