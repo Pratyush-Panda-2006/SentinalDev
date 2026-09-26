@@ -91,5 +91,7 @@ export interface PipelineReport {
   blastRadius: BlastRadiusResult | null;
   remediation: CVERemediationPlan | null;
   docSync: SpecSyncResult | null;
+  /** Raw unified diff captured from the git working tree (GIT_DIFF trigger only) */
+  gitDiff?: string;
   completedAt: string; // ISO 8601
 }

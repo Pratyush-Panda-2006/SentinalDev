@@ -33,7 +33,7 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: #f59e0b;
+      background: #22c55e;
       color: #fff;
       border-radius: 8px;
       padding: 6px 16px;
@@ -75,8 +75,8 @@
     .section-title { font-size: 14px; font-weight: 600; color: #1f2328; }
     .section-body { padding: 20px; }
     .risk-banner {
-      background: #fffbeb;
-      border: 1px solid #fcd34d;
+      background: #f0fdf4;
+      border: 1px solid #86efac;
       border-radius: 10px;
       padding: 16px 20px;
       margin-bottom: 20px;
@@ -87,10 +87,10 @@
     .risk-banner-score {
       font-size: 18px;
       font-weight: 800;
-      color: #92400e;
+      color: #166534;
       white-space: nowrap;
     }
-    .risk-banner-body { color: #92400e; font-size: 13px; line-height: 1.5; }
+    .risk-banner-body { color: #166534; font-size: 13px; line-height: 1.5; }
     .mermaid-wrap {
       background: #fafafa;
       border: 1px solid #e5e7eb;
@@ -153,36 +153,36 @@
     <div class="header">
       <div>
         <div class="header-title">🛡️ SentinelDev Pipeline Report</div>
-        <div class="header-sub">CVE Advisory — CVE-2024-DEMO01 (crypto-utils)</div>
-        <div class="header-ts">Completed: 2026-09-25T04:54:22.067Z</div>
+        <div class="header-sub">Git Diff — 148 file(s) changed</div>
+        <div class="header-ts">Completed: 2026-09-26T14:58:00.453Z</div>
       </div>
-      <div class="score-badge">⚡ MED</div>
+      <div class="score-badge">⚡ LOW</div>
     </div>
 
     <!-- Risk Banner -->
     <div class="risk-banner">
-      <div class="risk-banner-score">BLAST RADIUS: MED</div>
+      <div class="risk-banner-score">BLAST RADIUS: LOW</div>
       <div class="risk-banner-body">
-        1 file(s) impacted &nbsp;·&nbsp; 4 breaking signature(s) detected
+        0 file(s) impacted &nbsp;·&nbsp; 0 breaking signature(s) detected
       </div>
     </div>
 
     <!-- Quick Metrics -->
     <div class="metrics">
       <div class="metric-card">
-        <div class="metric-value">2</div>
+        <div class="metric-value">0</div>
         <div class="metric-label">Call Sites Patched</div>
       </div>
       <div class="metric-card">
-        <div class="metric-value">1</div>
+        <div class="metric-value">0</div>
         <div class="metric-label">Files Impacted</div>
       </div>
       <div class="metric-card">
-        <div class="metric-value">1</div>
+        <div class="metric-value">0</div>
         <div class="metric-label">Endpoints Synced</div>
       </div>
       <div class="metric-card">
-        <div class="metric-value">4</div>
+        <div class="metric-value">0</div>
         <div class="metric-label">Breaking Signatures</div>
       </div>
     </div>
@@ -197,20 +197,10 @@
         <div class="mermaid-wrap">
           <div class="mermaid">
 graph LR
-  reportService_ts_buildReport[&quot;reportService.ts\nbuildReport()&quot;] --&gt; reportService_ts_signReport[&quot;reportService.ts\nsignReport()&quot;]
-  api_ts__module_[&quot;api.ts&quot;] --&gt; api_ts__anonymous_[&quot;api.ts\n&lt;anonymous&gt;()&quot;]
-  api_ts__anonymous_[&quot;api.ts\n&lt;anonymous&gt;()&quot;] --&gt; reportService_ts_buildReport[&quot;reportService.ts\nbuildReport()&quot;]
-  userService_ts_getUsers[&quot;userService.ts\ngetUsers()&quot;] --&gt; userService_ts_hashUserId[&quot;userService.ts\nhashUserId()&quot;]
-  api_ts__anonymous_[&quot;api.ts\n&lt;anonymous&gt;()&quot;] --&gt; userService_ts_getUsers[&quot;userService.ts\ngetUsers()&quot;]
+  A[&quot;No call graph data&quot;]
           </div>
         </div>
         
-        <div style="margin-top:16px;">
-          <div style="font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Impacted Files</div>
-          <ul class="impacted-list">
-            <li>api.ts</li>
-          </ul>
-        </div>
       </div>
     </div>
 
@@ -221,48 +211,12 @@ graph LR
         <span class="section-title">Breaking Signatures</span>
       </div>
       <div class="section-body">
-        
-    <table style="width:100%;border-collapse:collapse;">
-      <thead>
-        <tr style="background:#f9fafb;border-bottom:2px solid #e5e7eb;">
-          <th style="padding:8px 14px;text-align:left;font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;">File</th>
-          <th style="padding:8px 14px;text-align:left;font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;">Function</th>
-        </tr>
-      </thead>
-      <tbody><tr>
-      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">reportService.ts</td>
-      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">signReport</td>
-    </tr><tr>
-      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">reportService.ts</td>
-      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">buildReport</td>
-    </tr><tr>
-      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">userService.ts</td>
-      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">hashUserId</td>
-    </tr><tr>
-      <td style="padding:8px 14px;font-family:monospace;font-size:12px;color:#6b7280;">userService.ts</td>
-      <td style="padding:8px 14px;font-family:monospace;font-size:13px;color:#1f2328;">getUsers</td>
-    </tr></tbody>
-    </table>
+        <p style="color:#6b7280;font-style:italic;padding:8px 0;">No breaking signatures detected.</p>
       </div>
     </div>
 
     <!-- CVE Remediation Diff -->
     
-    <div class="section">
-      <div class="section-header">
-        <span>🔧</span>
-        <span class="section-title">CVE Remediation — CVE-2024-DEMO01</span>
-        <span class="trigger-pill">crypto-utils 1.2.0 → 2.0.0</span>
-      </div>
-      <div class="section-body">
-        <div style="margin-bottom:12px;display:flex;gap:24px;font-size:13px;">
-          <div><span style="color:#f85149;font-family:monospace;">encryptMD5()</span>
-             <span style="color:#6b7280;margin:0 6px;">→</span>
-             <span style="color:#3fb950;font-family:monospace;">encryptSHA256()</span></div>
-        </div>
-        <div class="diff-viewer"><div class="diff-ctx">===================================================================</div><div class="diff-file">--- a/src\reportService.ts	original</div><div class="diff-file">+++ b/src\reportService.ts	patched</div><div class="diff-hunk">@@ -10,9 +10,9 @@</div><div class="diff-ctx">  * Generates a cryptographic signature for a report payload.</div><div class="diff-ctx">  * Currently uses encryptMD5 — flagged by CVE-2024-DEMO01.</div><div class="diff-ctx">  */</div><div class="diff-ctx"> export function signReport(payload: string): string {</div><div class="diff-del">-  return encryptMD5(payload);</div><div class="diff-add">+  return encryptSHA256(payload);</div><div class="diff-ctx"> }</div><div class="diff-ctx"> </div><div class="diff-ctx"> /**</div><div class="diff-ctx">  * Builds and signs a report object.</div><div class="diff-ctx"></div><div class="diff-ctx">===================================================================</div><div class="diff-file">--- a/src\userService.ts	original</div><div class="diff-file">+++ b/src\userService.ts	patched</div><div class="diff-hunk">@@ -10,9 +10,9 @@</div><div class="diff-ctx">  * Returns a stable hash for a given userId.</div><div class="diff-ctx">  * Currently uses encryptMD5 — flagged by CVE-2024-DEMO01.</div><div class="diff-ctx">  */</div><div class="diff-ctx"> export function hashUserId(userId: string): string {</div><div class="diff-del">-  return encryptMD5(userId);</div><div class="diff-add">+  return encryptSHA256(userId);</div><div class="diff-ctx"> }</div><div class="diff-ctx"> </div><div class="diff-ctx"> /**</div><div class="diff-ctx">  * Fetches a mock list of users with hashed IDs.</div><div class="diff-ctx"></div></div>
-      </div>
-    </div>
 
     <!-- Spec Sync -->
     <div class="section">
@@ -272,26 +226,11 @@ graph LR
         <span class="trigger-pill">openapi.yaml</span>
       </div>
       <div class="section-body">
-        
-    <table style="width:100%;border-collapse:collapse;">
-      <thead>
-        <tr style="background:#f9fafb;border-bottom:2px solid #e5e7eb;">
-          <th style="padding:10px 14px;text-align:left;font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;">Method</th>
-          <th style="padding:10px 14px;text-align:left;font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;">Path</th>
-          <th style="padding:10px 14px;text-align:left;font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;">Change</th>
-        </tr>
-      </thead>
-      <tbody>
-    <tr>
-      <td style="padding:10px 14px;"><span style="background:#8b5cf6;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;">POST</span></td>
-      <td style="padding:10px 14px;font-family:monospace;font-size:13px;">/report</td>
-      <td style="padding:10px 14px;"><span style="background:#22c55e;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;text-transform:uppercase;">added</span></td>
-    </tr></tbody>
-    </table>
+        <p style="color:#6b7280;font-style:italic;padding:8px 0;">No endpoint changes detected.</p>
         
         <div style="margin-top:16px;">
           <div style="font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Schema Diff</div>
-          <div class="diff-viewer"><div class="diff-ctx">===================================================================</div><div class="diff-file">--- a/openapi.yaml	original</div><div class="diff-file">+++ b/openapi.yaml	patched</div><div class="diff-hunk">@@ -1,25 +1,23 @@</div><div class="diff-del">-openapi: &quot;3.0.3&quot;</div><div class="diff-add">+openapi: 3.0.3</div><div class="diff-ctx"> info:</div><div class="diff-ctx">   title: SentinelDev Mock API</div><div class="diff-del">-  version: &quot;1.0.0&quot;</div><div class="diff-add">+  version: 1.0.0</div><div class="diff-ctx">   description: &gt;</div><div class="diff-del">-    Mock API for the SentinelDev demo testbed.</div><div class="diff-del">-    NOTE: POST /report is intentionally absent — DocuSync will detect and add it.</div><div class="diff-del">-</div><div class="diff-add">+    Mock API for the SentinelDev demo testbed. NOTE: POST /report is intentionally absent — DocuSync will detect and add</div><div class="diff-add">+    it.</div><div class="diff-ctx"> servers:</div><div class="diff-ctx">   - url: http://localhost:3000</div><div class="diff-ctx">     description: Local development server</div><div class="diff-del">-</div><div class="diff-ctx"> paths:</div><div class="diff-ctx">   /users:</div><div class="diff-ctx">     get:</div><div class="diff-ctx">       summary: List all users</div><div class="diff-ctx">       operationId: getUsers</div><div class="diff-ctx">       tags:</div><div class="diff-ctx">         - Users</div><div class="diff-ctx">       responses:</div><div class="diff-del">-        &quot;200&quot;:</div><div class="diff-add">+        '200':</div><div class="diff-ctx">           description: A list of users with hashed IDs</div><div class="diff-ctx">           content:</div><div class="diff-ctx">             application/json:</div><div class="diff-ctx">               schema:</div><div class="diff-hunk">@@ -37,5 +35,14 @@</div><div class="diff-ctx">                           type: string</div><div class="diff-ctx">                           example: Alice</div><div class="diff-ctx">                         hashedId:</div><div class="diff-ctx">                           type: string</div><div class="diff-del">-                          example: &quot;5f4dcc3b5aa765d61d8327de...&quot;</div><div class="diff-add">+                          example: 5f4dcc3b5aa765d61d8327de...</div><div class="diff-add">+  /report:</div><div class="diff-add">+    post:</div><div class="diff-add">+      summary: POST /report</div><div class="diff-add">+      operationId: postreport</div><div class="diff-add">+      tags:</div><div class="diff-add">+        - report</div><div class="diff-add">+      responses:</div><div class="diff-add">+        '200':</div><div class="diff-add">+          description: Success</div><div class="diff-ctx"></div></div>
+          <div class="diff-viewer"><div class="diff-ctx">===================================================================</div><div class="diff-file">--- a/openapi.yaml	original</div><div class="diff-file">+++ b/openapi.yaml	patched</div><div class="diff-hunk">@@ -1,48 +1,48 @@</div><div class="diff-del">-openapi: 3.0.3</div><div class="diff-del">-info:</div><div class="diff-del">-  title: SentinelDev Mock API</div><div class="diff-del">-  version: 1.0.0</div><div class="diff-del">-  description: &gt;</div><div class="diff-del">-    Mock API for the SentinelDev demo testbed. NOTE: POST /report is intentionally absent — DocuSync will detect and add</div><div class="diff-del">-    it.</div><div class="diff-del">-servers:</div><div class="diff-del">-  - url: http://localhost:3000</div><div class="diff-del">-    description: Local development server</div><div class="diff-del">-paths:</div><div class="diff-del">-  /users:</div><div class="diff-del">-    get:</div><div class="diff-del">-      summary: List all users</div><div class="diff-del">-      operationId: getUsers</div><div class="diff-del">-      tags:</div><div class="diff-del">-        - Users</div><div class="diff-del">-      responses:</div><div class="diff-del">-        '200':</div><div class="diff-del">-          description: A list of users with hashed IDs</div><div class="diff-del">-          content:</div><div class="diff-del">-            application/json:</div><div class="diff-del">-              schema:</div><div class="diff-del">-                type: object</div><div class="diff-del">-                properties:</div><div class="diff-del">-                  users:</div><div class="diff-del">-                    type: array</div><div class="diff-del">-                    items:</div><div class="diff-del">-                      type: object</div><div class="diff-del">-                      properties:</div><div class="diff-del">-                        id:</div><div class="diff-del">-                          type: string</div><div class="diff-del">-                          example: u-001</div><div class="diff-del">-                        name:</div><div class="diff-del">-                          type: string</div><div class="diff-del">-                          example: Alice</div><div class="diff-del">-                        hashedId:</div><div class="diff-del">-                          type: string</div><div class="diff-del">-                          example: 5f4dcc3b5aa765d61d8327de...</div><div class="diff-del">-  /report:</div><div class="diff-del">-    post:</div><div class="diff-del">-      summary: POST /report</div><div class="diff-del">-      operationId: postreport</div><div class="diff-del">-      tags:</div><div class="diff-del">-        - report</div><div class="diff-del">-      responses:</div><div class="diff-del">-        '200':</div><div class="diff-del">-          description: Success</div><div class="diff-add">+openapi: 3.0.3</div><div class="diff-add">+info:</div><div class="diff-add">+  title: SentinelDev Mock API</div><div class="diff-add">+  version: 1.0.0</div><div class="diff-add">+  description: &gt;</div><div class="diff-add">+    Mock API for the SentinelDev demo testbed. NOTE: POST /report is intentionally absent — DocuSync will detect and add</div><div class="diff-add">+    it.</div><div class="diff-add">+servers:</div><div class="diff-add">+  - url: http://localhost:3000</div><div class="diff-add">+    description: Local development server</div><div class="diff-add">+paths:</div><div class="diff-add">+  /users:</div><div class="diff-add">+    get:</div><div class="diff-add">+      summary: List all users</div><div class="diff-add">+      operationId: getUsers</div><div class="diff-add">+      tags:</div><div class="diff-add">+        - Users</div><div class="diff-add">+      responses:</div><div class="diff-add">+        '200':</div><div class="diff-add">+          description: A list of users with hashed IDs</div><div class="diff-add">+          content:</div><div class="diff-add">+            application/json:</div><div class="diff-add">+              schema:</div><div class="diff-add">+                type: object</div><div class="diff-add">+                properties:</div><div class="diff-add">+                  users:</div><div class="diff-add">+                    type: array</div><div class="diff-add">+                    items:</div><div class="diff-add">+                      type: object</div><div class="diff-add">+                      properties:</div><div class="diff-add">+                        id:</div><div class="diff-add">+                          type: string</div><div class="diff-add">+                          example: u-001</div><div class="diff-add">+                        name:</div><div class="diff-add">+                          type: string</div><div class="diff-add">+                          example: Alice</div><div class="diff-add">+                        hashedId:</div><div class="diff-add">+                          type: string</div><div class="diff-add">+                          example: 5f4dcc3b5aa765d61d8327de...</div><div class="diff-add">+  /report:</div><div class="diff-add">+    post:</div><div class="diff-add">+      summary: POST /report</div><div class="diff-add">+      operationId: postreport</div><div class="diff-add">+      tags:</div><div class="diff-add">+        - report</div><div class="diff-add">+      responses:</div><div class="diff-add">+        '200':</div><div class="diff-add">+          description: Success</div><div class="diff-ctx"></div></div>
         </div>
       </div>
     </div>

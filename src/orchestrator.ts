@@ -31,7 +31,8 @@ export interface ReporterOutputs {
  */
 export async function runPipeline(
   trigger: Trigger,
-  outputDir?: string
+  outputDir?: string,
+  gitDiff?: string
 ): Promise<{ report: PipelineReport; outputs: ReporterOutputs }> {
   console.log('\n════════════════════════════════════════════════════');
   console.log('  SentinelDev Pipeline — Starting');
@@ -73,6 +74,7 @@ export async function runPipeline(
     blastRadius,
     remediation,
     docSync,
+    ...(gitDiff !== undefined ? { gitDiff } : {}),
     completedAt: new Date().toISOString(),
   };
 

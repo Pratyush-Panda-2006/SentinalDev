@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SentinelDev — Autonomous Lifecycle Engine</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg:       #0d1117;
+      --surface:  #161b22;
+      --surface2: #1c2128;
+      --border:   #30363d;
+      --text:     #e6edf3;
+      --muted:    #8b949e;
+      --accent:   #58a6ff;
+      --green:    #3fb950;
+      --red:      #f85149;
+      --amber:    #d29922;
+      --purple:   #bc8cff;
+      --radius:   10px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system,"Segoe UI",system-ui,sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; min-height: 100vh; }
+
+    /* ── Layout ── */
+    .shell { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+    .sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 24px 16px; display: flex; flex-direction: column; gap: 8px; }
+    .main { padding: 28px 32px; display: flex; flex-direction: column; gap: 24px; overflow-x: hidden; }
+
+    /* ── Sidebar ── */
+    .logo { display: flex; align-items: center; gap: 10px; padding: 0 8px 20px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+    .logo-icon { font-size: 22px; }
+    .logo-text { font-size: 15px; font-weight: 700; color: var(--text); }
+    .logo-sub { font-size: 10px; color: var(--muted); margin-top: 1px; }
+    .nav-label { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; padding: 12px 8px 4px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; color: var(--muted); cursor: pointer; font-size: 13px; transition: background .15s, color .15s; border: none; background: none; width: 100%; text-align: left; }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: rgba(88,166,255,.12); color: var(--accent); }
+    .nav-item svg { flex-shrink: 0; width: 16px; height: 16px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; margin-left: auto; flex-shrink: 0; }
+    .dot-green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .dot-amber { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+    .dot-red   { background: var(--red);   box-shadow: 0 0 6px var(--red); }
+    .dot-grey  { background: var(--muted); }
+
+    /* ── Top bar ── */
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+    .topbar-title { font-size: 20px; font-weight: 700; }
+    .topbar-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
+    .badge-green  { background: rgba(63,185,80,.15); color: var(--green); border: 1px solid rgba(63,185,80,.3); }
+    .badge-amber  { background: rgba(210,153,34,.15); color: var(--amber); border: 1px solid rgba(210,153,34,.3); }
+    .badge-red    { background: rgba(248,81,73,.15);  color: var(--red);   border: 1px solid rgba(248,81,73,.3); }
+    .badge-blue   { background: rgba(88,166,255,.12); color: var(--accent); border: 1px solid rgba(88,166,255,.25); }
+    .badge-grey   { background: rgba(139,148,158,.12); color: var(--muted); border: 1px solid var(--border); }
+
+    /* ── Control panel ── */
+    .control-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: opacity .15s, transform .1s; }
+    .btn:active { transform: scale(.97); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); color: #0d1117; }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-danger { background: rgba(248,81,73,.18); color: var(--red); border: 1px solid rgba(248,81,73,.3); }
+    .btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+    .control-right { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    #target-badge { font-size: 12px; }
+
+    /* ── Metrics row ── */
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
+    .metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; position: relative; overflow: hidden; }
+    .metric-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--accent); border-radius: var(--radius) var(--radius) 0 0; }
+    .metric-card.green::before { background: var(--green); }
+    .metric-card.amber::before { background: var(--amber); }
+    .metric-card.red::before   { background: var(--red); }
+    .metric-card.purple::before { background: var(--purple); }
+    .metric-val { font-size: 34px; font-weight: 800; line-height: 1; color: var(--text); }
+    .metric-label { font-size: 11px; color: var(--muted); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500; }
+
+    /* ── Risk card ── */
+    .risk-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; display: flex; align-items: center; gap: 20px; }
+    .risk-score-text { font-size: 40px; font-weight: 900; letter-spacing: -1px; }
+    .risk-score-text.low      { color: var(--green); }
+    .risk-score-text.med      { color: var(--amber); }
+    .risk-score-text.critical { color: var(--red); }
+    .risk-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
+    .risk-desc { font-size: 13px; color: var(--muted); }
+
+    /* ── Tabs ── */
+    .tabs-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .tab-bar { display: flex; border-bottom: 1px solid var(--border); padding: 0 16px; gap: 4px; overflow-x: auto; }
+    .tab-btn { padding: 12px 16px; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; border: none; background: none; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; display: flex; align-items: center; gap: 6px; transition: color .15s; }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab-btn svg { width: 14px; height: 14px; }
+    .tab-panel { display: none; padding: 20px 24px; }
+    .tab-panel.active { display: block; }
+
+    /* ── Call graph ── */
+    .mermaid-wrap { background: #0a0e14; border: 1px solid var(--border); border-radius: 8px; padding: 20px; overflow-x: auto; text-align: center; min-height: 160px; display: flex; align-items: center; justify-content: center; }
+    .mermaid-wrap .mermaid { width: 100%; }
+
+    /* ── Diff viewer ── */
+    .diff-viewer { font-family: "SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace; font-size: 12px; line-height: 1.6; background: #0a0e14; border: 1px solid var(--border); border-radius: 8px; overflow-x: auto; padding: 4px 0; max-height: 480px; overflow-y: auto; }
+    .diff-viewer div { padding: 1px 16px; white-space: pre; }
+    .diff-add  { background: rgba(63,185,80,.1);  color: #3fb950; }
+    .diff-del  { background: rgba(248,81,73,.1);  color: #f85149; }
+    .diff-hunk { background: rgba(88,166,255,.08); color: #58a6ff; }
+    .diff-file { background: rgba(188,140,255,.08); color: #bc8cff; font-weight: 600; }
+    .diff-ctx  { color: var(--muted); }
+
+    /* ── Spec sync table ── */
+    .spec-table { width: 100%; border-collapse: collapse; }
+    .spec-table th { padding: 9px 14px; text-align: left; font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); }
+    .spec-table td { padding: 10px 14px; border-bottom: 1px solid var(--surface2); font-size: 13px; }
+    .spec-table tr:last-child td { border-bottom: none; }
+    .method-badge { display: inline-block; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 700; font-family: monospace; }
+    .m-get    { background: rgba(88,166,255,.18); color: #58a6ff; }
+    .m-post   { background: rgba(188,140,255,.18); color: #bc8cff; }
+    .m-put    { background: rgba(210,153,34,.18); color: var(--amber); }
+    .m-patch  { background: rgba(63,185,80,.18); color: var(--green); }
+    .m-delete { background: rgba(248,81,73,.18); color: var(--red); }
+
+    /* ── Terminal / logs ── */
+    .terminal { background: #020409; border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; font-family: "SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace; font-size: 12px; line-height: 1.7; color: #7ee787; max-height: 420px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
+    .terminal .log-stage   { color: var(--accent); font-weight: 700; }
+    .terminal .log-ok      { color: var(--green); }
+    .terminal .log-warn    { color: var(--amber); }
+    .terminal .log-err     { color: var(--red); }
+    .terminal .log-muted   { color: var(--muted); }
+    .terminal .log-default { color: #cdd9e5; }
+
+    /* ── Spinner ── */
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(88,166,255,.3); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Misc ── */
+    .empty-state { color: var(--muted); font-style: italic; font-size: 13px; padding: 16px 0; text-align: center; }
+    .section-head { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+    .repo-row { display: flex; gap: 8px; align-items: center; width: 100%; }
+    .repo-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; color: var(--text); font-size: 13px; outline: none; }
+    .repo-input:focus { border-color: var(--accent); }
+    .repo-input::placeholder { color: var(--muted); }
+
+    @media (max-width: 720px) {
+      .shell { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .main { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="logo">
+      <span class="logo-icon">🛡️</span>
+      <div>
+        <div class="logo-text">SentinelDev</div>
+        <div class="logo-sub">Autonomous Lifecycle Engine</div>
+      </div>
+    </div>
+
+    <div class="nav-label">Pipeline</div>
+    <button class="nav-item active" onclick="switchNav(this,'overview')">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5V5a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 1 5zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5V5a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 5zM1 10.5A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5V13a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 1 13zm8 0A1.5 1.5 0 0 1 10.5 9h3A1.5 1.5 0 0 1 15 10.5V13a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13z"/></svg>
+      Overview
+    </button>
+    <button class="nav-item" onclick="switchNav(this,'logs')">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 2a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1zm1 0v12h10V2zm2 2h6v1H5zm0 2h6v1H5zm0 2h4v1H5z"/></svg>
+      Live Logs
+      <span id="nav-log-dot" class="status-dot dot-grey"></span>
+    </button>
+
+    <div class="nav-label">Reports</div>
+    <button class="nav-item" onclick="window.open('/sentinel-report.html')">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/></svg>
+      HTML Report ↗
+    </button>
+    <button class="nav-item" onclick="window.open('/sentinel-pr-comment.md')">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+      PR Comment ↗
+    </button>
+
+    <div style="margin-top:auto; padding-top:16px; border-top:1px solid var(--border); font-size:11px; color:var(--muted); text-align:center;">
+      IBM Bob 2.0 Hackathon
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <main class="main" id="page-overview">
+
+    <!-- Top bar -->
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Pipeline Dashboard</div>
+        <div class="topbar-sub">Blast radius analysis · CVE remediation · Spec sync</div>
+      </div>
+      <span id="target-badge" class="badge badge-grey">● mock-target / idle</span>
+    </div>
+
+    <!-- Control panel -->
+    <div class="control-panel">
+      <div style="flex:1;min-width:200px;">
+        <div class="section-head" style="margin-bottom:8px;">Target Repository Path</div>
+        <div class="repo-row">
+          <input id="repo-path" class="repo-input" type="text" placeholder="Leave blank to use mock-target (demo)" />
+        </div>
+      </div>
+      <div class="control-right">
+        <button class="btn btn-primary" id="btn-cve" onclick="runPipeline('CVE_ADVISORY')">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 1a6 6 0 1 1 0 12A6 6 0 0 1 8 2zm-.5 3.5v3.793l2.146 2.147-.707.707-2.293-2.293A.5.5 0 0 1 6.5 9.5v-4h1z"/></svg>
+          Run CVE Pipeline
+        </button>
+        <button class="btn btn-secondary" id="btn-blast" onclick="runPipeline('GIT_DIFF')">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M6 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 0 1H9.707l7.147 7.146-.708.708L9 4.707V9.5a.5.5 0 0 1-1 0v-6z"/></svg>
+          AST Blast-Radius Audit
+        </button>
+      </div>
+    </div>
+
+    <!-- Risk + Metrics row -->
+    <div style="display:grid;grid-template-columns:220px 1fr;gap:14px;align-items:stretch;">
+      <div class="risk-card" id="risk-card">
+        <div>
+          <div class="risk-label">Blast Radius</div>
+          <div class="risk-score-text" id="risk-score">—</div>
+          <div class="risk-desc" id="risk-desc">Run a pipeline to see the risk score</div>
+        </div>
+      </div>
+      <div class="metrics">
+        <div class="metric-card green">
+          <div class="metric-val" id="m-patched">—</div>
+          <div class="metric-label">Call Sites Patched</div>
+        </div>
+        <div class="metric-card amber">
+          <div class="metric-val" id="m-impacted">—</div>
+          <div class="metric-label">Files Impacted</div>
+        </div>
+        <div class="metric-card purple">
+          <div class="metric-val" id="m-endpoints">—</div>
+          <div class="metric-label">Endpoints Synced</div>
+        </div>
+        <div class="metric-card red">
+          <div class="metric-val" id="m-breaking">—</div>
+          <div class="metric-label">Breaking Signatures</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs-wrap">
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab(this,'tab-graph')">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M6 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 0 1H9.707l7.147 7.146-.708.708L9 4.707V9.5a.5.5 0 0 1-1 0v-6z"/></svg>
+          Call Graph
+        </button>
+        <button class="tab-btn" onclick="switchTab(this,'tab-diff')">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm.5 4.5v3.793l2.146 2.147-.707.707-2.5-2.5A.5.5 0 0 1 7.5 8V4.5h1z"/></svg>
+          Patch Diff
+        </button>
+        <button class="tab-btn" onclick="switchTab(this,'tab-spec')">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/></svg>
+          Spec Drift
+        </button>
+        <button class="tab-btn" onclick="switchTab(this,'tab-breaking')">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16zM7.5 5a.5.5 0 0 0-.5.5v4a.5.5 0 0 0 1 0v-4a.5.5 0 0 0-.5-.5zm0 7a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5z"/></svg>
+          Breaking Sigs
+        </button>
+      </div>
+
+      <!-- Call Graph tab -->
+      <div class="tab-panel active" id="tab-graph">
+        <div id="graph-container" class="mermaid-wrap">
+          <span class="empty-state">Run a pipeline to render the call graph.</span>
+        </div>
+      </div>
+
+      <!-- Patch Diff tab -->
+      <div class="tab-panel" id="tab-diff">
+        <div id="diff-container">
+          <div class="empty-state">Run the CVE pipeline to see the remediation diff.</div>
+        </div>
+      </div>
+
+      <!-- Spec Drift tab -->
+      <div class="tab-panel" id="tab-spec">
+        <div id="spec-container">
+          <div class="empty-state">Run a pipeline to see OpenAPI spec changes.</div>
+        </div>
+      </div>
+
+      <!-- Breaking Signatures tab -->
+      <div class="tab-panel" id="tab-breaking">
+        <div id="breaking-container">
+          <div class="empty-state">Run a pipeline to see breaking signatures.</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ── Logs page (hidden by default) ── -->
+  <main class="main" id="page-logs" style="display:none;">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Live Terminal</div>
+        <div class="topbar-sub">Real-time agent output from the last pipeline run</div>
+      </div>
+      <button class="btn btn-secondary" onclick="clearLogs()">Clear</button>
+    </div>
+    <div class="terminal" id="terminal-output">Waiting for pipeline run...</div>
+  </main>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -6,15 +6,18 @@
   "scripts": {
     "build": "tsc --project tsconfig.json",
     "start": "node dist/index.js",
-    "dev": "ts-node src/index.ts",
-    "demo": "ts-node src/index.ts --demo",
-    "demo:gitdiff": "ts-node src/index.ts --trigger triggers/gitdiff-trigger.json",
-    "demo:cve": "ts-node src/index.ts --trigger triggers/cve-trigger.json",
+    "ui": "tsx src/app.ts",
+    "dev": "tsx watch src/app.ts",
+    "cli": "tsx src/index.ts",
+    "demo": "tsx src/index.ts --demo",
+    "demo:gitdiff": "tsx src/index.ts --trigger triggers/gitdiff-trigger.json",
+    "demo:cve": "tsx src/index.ts --trigger triggers/cve-trigger.json",
     "report:open": "start sentinel-report.html || open sentinel-report.html"
   },
   "dependencies": {
     "diff": "^5.2.0",
     "js-yaml": "^4.1.0",
+    "simple-git": "^4.0.1",
     "ts-morph": "^22.0.0"
   },
   "devDependencies": {
@@ -22,9 +25,13 @@
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.14.0",
     "ts-node": "^10.9.2",
+    "tsx": "^4.7.0",
     "typescript": "^5.4.5"
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
   }
 }
