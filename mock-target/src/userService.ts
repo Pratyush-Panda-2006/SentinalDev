@@ -11,7 +11,7 @@ export interface User {
  * Currently uses encryptMD5 — flagged by CVE-2024-DEMO01.
  */
 export function hashUserId(userId: string): string {
-  return encryptMD5(userId);
+  return encryptSHA256(userId);
 }
 
 /**

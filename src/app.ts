@@ -19,6 +19,13 @@ import { runPipeline } from './orchestrator';
 import { seedMockTarget } from './seed';
 import { CVEAdvisoryTrigger, GitDiffTrigger } from './types/index';
 import { inspectRepoChanges } from './services/gitService';
+import {
+  cloneRepository,
+  extractZip,
+  cleanupSandbox,
+  parseMultipartUpload,
+  isValidGitUrl,
+} from './services/repoIngestionService';
 
 const PORT = 3000;
 const PUBLIC_DIR = path.resolve(__dirname, 'public');
@@ -195,6 +202,100 @@ const server = http.createServer(async (req, res) => {
     } catch (err) {
       console.error('[API] Pipeline error:', (err as Error).message);
       sendJson(res, 500, { ok: false, error: (err as Error).message });
+    }
+    return;
+  }
+
+  // ── POST /api/clone-repo → clone a GitHub / HTTPS repo then run pipeline ──
+  if (method === 'POST' && urlPath === '/api/clone-repo') {
+    let sandboxPath: string | null = null;
+    try {
+      const body      = await readJsonBody(req);
+      const repoUrl   = body.repoUrl   as string | undefined;
+      const branch    = body.branch    as string | undefined;
+      const triggerKind = (body.triggerKind as string | undefined) ?? 'GIT_DIFF';
+
+      if (!repoUrl || !isValidGitUrl(repoUrl)) {
+        sendJson(res, 400, { ok: false, error: 'repoUrl must be a valid https:// git URL' });
+        return;
+      }
+
+      console.log(`[API] POST /api/clone-repo | url=${repoUrl} | branch=${branch ?? 'default'}`);
+      const { sandboxPath: sp, repoName } = await cloneRepository(repoUrl, branch);
+      sandboxPath = sp;
+
+      console.log(`[API] Cloned "${repoName}" into sandbox: ${sandboxPath}`);
+
+      let report;
+      if (triggerKind === 'CVE_ADVISORY') {
+        const trigger = buildCveTrigger(sandboxPath);
+        const result  = await runPipeline(trigger, process.cwd());
+        report = result.report;
+      } else {
+        const { changedFiles, diff } = await inspectRepoChanges(sandboxPath);
+        const files = changedFiles.length > 0
+          ? changedFiles
+          : (fs.readdirSync(path.join(sandboxPath, 'src').replace(/\\/g, '/'))
+               .filter(f => f.endsWith('.ts'))
+               .map(f => path.resolve(sandboxPath!, 'src', f))
+             );
+        const trigger = buildBlastTrigger(sandboxPath, files);
+        const result  = await runPipeline(trigger, process.cwd(), diff);
+        report = result.report;
+      }
+
+      sendJson(res, 200, { ok: true, report, repoName, sandboxPath });
+    } catch (err) {
+      console.error('[API] clone-repo error:', (err as Error).message);
+      sendJson(res, 500, { ok: false, error: (err as Error).message });
+    } finally {
+      if (sandboxPath) cleanupSandbox(sandboxPath);
+    }
+    return;
+  }
+
+  // ── POST /api/upload-zip → extract a ZIP upload then run pipeline ─────────
+  if (method === 'POST' && urlPath === '/api/upload-zip') {
+    let sandboxPath: string | null = null;
+    try {
+      console.log('[API] POST /api/upload-zip — parsing multipart upload');
+      const { file, fields } = await parseMultipartUpload(req);
+      const triggerKind = fields.triggerKind ?? 'GIT_DIFF';
+
+      if (!file.fileName.endsWith('.zip') && file.mimeType !== 'application/zip') {
+        sendJson(res, 400, { ok: false, error: 'Only .zip archives are accepted' });
+        return;
+      }
+
+      const { sandboxPath: sp, repoName } = extractZip(file.buffer, file.fileName);
+      sandboxPath = sp;
+
+      console.log(`[API] Extracted "${repoName}" into sandbox: ${sandboxPath}`);
+
+      let report;
+      if (triggerKind === 'CVE_ADVISORY') {
+        const trigger = buildCveTrigger(sandboxPath);
+        const result  = await runPipeline(trigger, process.cwd());
+        report = result.report;
+      } else {
+        const { changedFiles, diff } = await inspectRepoChanges(sandboxPath);
+        const srcDir = path.join(sandboxPath, 'src');
+        const files  = changedFiles.length > 0
+          ? changedFiles
+          : (fs.existsSync(srcDir)
+              ? fs.readdirSync(srcDir).filter(f => f.endsWith('.ts')).map(f => path.resolve(srcDir, f))
+              : []);
+        const trigger = buildBlastTrigger(sandboxPath, files);
+        const result  = await runPipeline(trigger, process.cwd(), diff);
+        report = result.report;
+      }
+
+      sendJson(res, 200, { ok: true, report, repoName, sandboxPath: '[cleaned]' });
+    } catch (err) {
+      console.error('[API] upload-zip error:', (err as Error).message);
+      sendJson(res, 500, { ok: false, error: (err as Error).message });
+    } finally {
+      if (sandboxPath) cleanupSandbox(sandboxPath);
     }
     return;
   }

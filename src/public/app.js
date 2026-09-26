@@ -5,6 +5,9 @@
 let isRunning = false;
 const logs = [];
 
+/** Currently staged ZIP file for upload */
+let stagedZipFile = null;
+
 // ─── Page / nav switching ─────────────────────────────────────────────────────
 
 function switchNav(btn, page) {
@@ -132,11 +135,23 @@ function updateMetrics(report) {
   badge.className     = 'badge ' + cls;
   badge.textContent   = `● ${score} / pipeline complete`;
 
-  // Metric counters
-  document.getElementById('m-patched').textContent   = rem ? String(rem.callSitesRefactored) : '0';
-  document.getElementById('m-impacted').textContent  = br  ? String(br.impactedFiles.length) : '0';
-  document.getElementById('m-endpoints').textContent = ds  ? String(ds.updatedEndpoints.length) : '0';
-  document.getElementById('m-breaking').textContent  = br  ? String(br.breakingSignatures.length) : '0';
+  // Metric counters with pop animation
+  const metricIds = [
+    ['m-patched',   rem ? String(rem.callSitesRefactored)        : '0'],
+    ['m-impacted',  br  ? String(br.impactedFiles.length)        : '0'],
+    ['m-endpoints', ds  ? String(ds.updatedEndpoints.length)     : '0'],
+    ['m-breaking',  br  ? String(br.breakingSignatures.length)   : '0'],
+  ];
+  metricIds.forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = val;
+    el.classList.remove('updated');
+    // Force reflow so the animation re-triggers even with the same value
+    void el.offsetWidth;
+    el.classList.add('updated');
+    setTimeout(() => el.classList.remove('updated'), 600);
+  });
 }
 
 // ─── Call graph (Mermaid) ─────────────────────────────────────────────────────
@@ -295,6 +310,7 @@ async function runPipeline(triggerKind) {
   if (isRunning) return;
 
   setLoading(true);
+  showProgress('Initialising pipeline…');
 
   const repoPath = document.getElementById('repo-path').value.trim();
 
@@ -308,6 +324,8 @@ async function runPipeline(triggerKind) {
     const body = { triggerKind };
     if (repoPath) body.repoPath = repoPath;
 
+    advanceProgress(30, 'Running agents…');
+
     const res  = await fetch('/api/run-pipeline', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -320,8 +338,11 @@ async function runPipeline(triggerKind) {
       pushLog('Pipeline error: ' + (data.error || 'Unknown error'), 'err');
       document.getElementById('target-badge').className = 'badge badge-red';
       document.getElementById('target-badge').textContent = '● error';
+      hideProgress();
       return;
     }
+
+    advanceProgress(90, 'Rendering results…');
 
     const report = data.report;
 
@@ -350,10 +371,13 @@ async function runPipeline(triggerKind) {
     // Flash nav log dot
     document.getElementById('nav-log-dot').className = 'status-dot dot-green';
 
+    hideProgress();
+
   } catch (err) {
     pushLog('Network error: ' + err.message, 'err');
     document.getElementById('target-badge').className = 'badge badge-red';
     document.getElementById('target-badge').textContent = '● server unreachable';
+    hideProgress();
   } finally {
     setLoading(false);
   }
@@ -382,3 +406,267 @@ mermaid.initialize({
     '  style rs fill:#1c2128,stroke:#388bfd,color:#cdd9e5';
   await renderMermaid(defaultGraph);
 })();
+
+// ─── External repo panel ──────────────────────────────────────────────────────
+
+function switchExtTab(tab) {
+  const urlPanel = document.getElementById('ext-panel-url');
+  const zipPanel = document.getElementById('ext-panel-zip');
+  const urlBtn   = document.getElementById('ext-tab-url');
+  const zipBtn   = document.getElementById('ext-tab-zip');
+
+  if (tab === 'url') {
+    urlPanel.style.display = 'flex';
+    zipPanel.style.display = 'none';
+    urlBtn.style.background = 'var(--accent)';
+    urlBtn.style.color      = '#0d1117';
+    zipBtn.style.background = 'transparent';
+    zipBtn.style.color      = 'var(--muted)';
+  } else {
+    urlPanel.style.display = 'none';
+    zipPanel.style.display = 'flex';
+    zipBtn.style.background = 'var(--accent)';
+    zipBtn.style.color      = '#0d1117';
+    urlBtn.style.background = 'transparent';
+    urlBtn.style.color      = 'var(--muted)';
+  }
+}
+
+function setExtStatus(msg, color) {
+  const el = document.getElementById('ext-status');
+  if (el) { el.textContent = msg; el.style.color = color || 'var(--muted)'; }
+}
+
+// ─── ZIP drag-and-drop / file picker ─────────────────────────────────────────
+
+function handleZipSelect(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  stagedZipFile = file;
+  const label = document.getElementById('zip-drop-label');
+  if (label) {
+    label.innerHTML = `<span style="color:var(--green);font-weight:600;">✓ ${file.name}</span>
+      <span style="color:var(--muted);font-size:11px;display:block;margin-top:2px;">${(file.size / 1024 / 1024).toFixed(2)} MB — ready to upload</span>`;
+  }
+  document.getElementById('zip-drop-zone').style.borderColor = 'var(--green)';
+  setExtStatus(`Staged: ${file.name}`, 'var(--green)');
+}
+
+function handleZipDrop(event) {
+  event.preventDefault();
+  document.getElementById('zip-drop-zone').style.borderColor = 'var(--border)';
+  const file = event.dataTransfer.files && event.dataTransfer.files[0];
+  if (!file) return;
+  if (!file.name.endsWith('.zip')) {
+    setExtStatus('Only .zip files are accepted', 'var(--red)');
+    return;
+  }
+  // Programmatically set the file on the input so handleZipSelect fires
+  const dt   = new DataTransfer();
+  dt.items.add(file);
+  const input = document.getElementById('zip-input');
+  input.files = dt.files;
+  handleZipSelect(input);
+}
+
+// ─── All-buttons loading helper ───────────────────────────────────────────────
+
+function setAllBusy(busy) {
+  const ids = ['btn-cve','btn-blast','btn-clone-cve','btn-clone-blast','btn-zip-cve','btn-zip-blast'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = busy;
+  });
+}
+
+// ─── Shared report applier ────────────────────────────────────────────────────
+
+async function applyReport(report, triggerKind, sourceLabel) {
+  updateMetrics(report);
+  hydrateLogsFromReport(report, triggerKind);
+
+  const graphDef = report.blastRadius && report.blastRadius.callGraphTree.length > 0
+    ? buildMermaidDef(report.blastRadius.callGraphTree)
+    : 'graph LR\n  A["api.ts"] --> B["userService.ts"]\n  A --> C["reportService.ts"]\n  B --> D["crypto-utils.ts"]\n  C --> D';
+  await renderMermaid(graphDef);
+
+  const diffPatch = report.remediation?.patch || report.gitDiff || '';
+  document.getElementById('diff-container').innerHTML = renderDiff(diffPatch);
+  document.getElementById('spec-container').innerHTML = renderSpecTable(report.docSync);
+  document.getElementById('breaking-container').innerHTML = renderBreakingTable(report.blastRadius);
+  document.getElementById('nav-log-dot').className = 'status-dot dot-green';
+
+  const score = report.blastRadius?.blastRadiusScore || 'LOW';
+  const cls   = score === 'CRITICAL' ? 'badge-red' : score === 'MED' ? 'badge-amber' : 'badge-green';
+  const badge = document.getElementById('target-badge');
+  badge.className   = 'badge ' + cls;
+  badge.textContent = `● ${score} / ${sourceLabel}`;
+}
+
+// ─── GitHub URL clone runner ─────────────────────────────────────────────────
+
+async function runClone(triggerKind) {
+  const url    = document.getElementById('github-url').value.trim();
+  const branch = document.getElementById('github-branch').value.trim();
+
+  if (!url) {
+    setExtStatus('Please enter a GitHub repository URL', 'var(--red)');
+    return;
+  }
+  if (!url.startsWith('https://') && !url.startsWith('git://')) {
+    setExtStatus('URL must start with https:// or git://', 'var(--red)');
+    return;
+  }
+
+  if (isRunning) return;
+  isRunning = true;
+  setAllBusy(true);
+  setExtStatus('Cloning repository… this may take a moment', 'var(--amber)');
+  showProgress('Cloning repository…');
+
+  const term = document.getElementById('terminal-output');
+  term.textContent = '';
+  pushLog(`Cloning ${url}${branch ? ' @ ' + branch : ''}…`, 'stage');
+  pushLog(`Trigger: ${triggerKind}`, 'muted');
+
+  try {
+    const body = { repoUrl: url, triggerKind };
+    if (branch) body.branch = branch;
+
+    advanceProgress(25, 'Waiting for clone…');
+
+    const res  = await fetch('/api/clone-repo', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(body),
+    });
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) {
+      setExtStatus('Error: ' + (data.error || 'Clone failed'), 'var(--red)');
+      pushLog('Clone error: ' + (data.error || 'Unknown'), 'err');
+      hideProgress();
+      return;
+    }
+
+    advanceProgress(90, 'Rendering results…');
+    setExtStatus(`✓ Cloned "${data.repoName}" — pipeline complete`, 'var(--green)');
+    await applyReport(data.report, triggerKind, `cloned: ${data.repoName}`);
+    hideProgress();
+  } catch (err) {
+    setExtStatus('Network error: ' + err.message, 'var(--red)');
+    pushLog('Network error: ' + err.message, 'err');
+    hideProgress();
+  } finally {
+    isRunning = false;
+    setAllBusy(false);
+    setLoading(false);
+  }
+}
+
+// ─── ZIP upload runner ────────────────────────────────────────────────────────
+
+async function runZipUpload(triggerKind) {
+  if (!stagedZipFile) {
+    setExtStatus('Please select a ZIP file first', 'var(--red)');
+    return;
+  }
+  if (isRunning) return;
+  isRunning = true;
+  setAllBusy(true);
+  setExtStatus('Uploading and extracting ZIP…', 'var(--amber)');
+  showProgress('Uploading ZIP…');
+
+  const term = document.getElementById('terminal-output');
+  term.textContent = '';
+  pushLog(`Uploading ${stagedZipFile.name} (${(stagedZipFile.size/1024/1024).toFixed(2)} MB)…`, 'stage');
+  pushLog(`Trigger: ${triggerKind}`, 'muted');
+
+  try {
+    const form = new FormData();
+    form.append('zipfile', stagedZipFile, stagedZipFile.name);
+    form.append('triggerKind', triggerKind);
+
+    advanceProgress(30, 'Extracting and analysing…');
+
+    const res  = await fetch('/api/upload-zip', { method: 'POST', body: form });
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) {
+      setExtStatus('Error: ' + (data.error || 'Upload failed'), 'var(--red)');
+      pushLog('Upload error: ' + (data.error || 'Unknown'), 'err');
+      hideProgress();
+      return;
+    }
+
+    advanceProgress(90, 'Rendering results…');
+    setExtStatus(`✓ Extracted "${data.repoName}" — pipeline complete`, 'var(--green)');
+    await applyReport(data.report, triggerKind, `zip: ${data.repoName}`);
+    hideProgress();
+  } catch (err) {
+    setExtStatus('Network error: ' + err.message, 'var(--red)');
+    pushLog('Network error: ' + err.message, 'err');
+    hideProgress();
+  } finally {
+    isRunning = false;
+    setAllBusy(false);
+    setLoading(false);
+  }
+}
+
+// ─── Sample scenarios dropdown ────────────────────────────────────────────────
+
+function toggleScenarios() {
+  const dd = document.getElementById('scenarios-dropdown');
+  dd.classList.toggle('open');
+  // Close when clicking outside
+  if (dd.classList.contains('open')) {
+    const closer = (e) => {
+      if (!document.getElementById('scenarios-wrap').contains(e.target)) {
+        dd.classList.remove('open');
+        document.removeEventListener('click', closer);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', closer), 0);
+  }
+}
+
+function runScenario(scenarioId) {
+  document.getElementById('scenarios-dropdown').classList.remove('open');
+  // Clear the custom repo path so we use mock-target
+  document.getElementById('repo-path').value = '';
+
+  if (scenarioId === 'cve-demo') {
+    runPipeline('CVE_ADVISORY');
+  } else if (scenarioId === 'blast-demo') {
+    runPipeline('GIT_DIFF');
+  }
+}
+
+// ─── Progress bar helpers ──────────────────────────────────────────────────────
+
+function showProgress(label) {
+  const bar = document.getElementById('progress-bar');
+  const fill = document.getElementById('progress-fill');
+  const lbl  = document.getElementById('progress-label');
+  if (bar)  bar.style.display  = 'block';
+  if (fill) fill.style.width   = '15%';
+  if (lbl)  lbl.textContent    = label || 'Running pipeline…';
+}
+
+function advanceProgress(pct, label) {
+  const fill = document.getElementById('progress-fill');
+  const lbl  = document.getElementById('progress-label');
+  if (fill) fill.style.width = pct + '%';
+  if (lbl && label) lbl.textContent = label;
+}
+
+function hideProgress() {
+  const bar  = document.getElementById('progress-bar');
+  const fill = document.getElementById('progress-fill');
+  if (fill) fill.style.width = '100%';
+  setTimeout(() => {
+    if (bar)  bar.style.display = 'none';
+    if (fill) fill.style.width  = '0%';
+  }, 600);
+}

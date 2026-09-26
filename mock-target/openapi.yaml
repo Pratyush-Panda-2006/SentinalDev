@@ -1,15 +1,13 @@
-openapi: "3.0.3"
+openapi: 3.0.3
 info:
   title: SentinelDev Mock API
-  version: "1.0.0"
+  version: 1.0.0
   description: >
-    Mock API for the SentinelDev demo testbed.
-    NOTE: POST /report is intentionally absent — DocuSync will detect and add it.
-
+    Mock API for the SentinelDev demo testbed. NOTE: POST /report is intentionally absent — DocuSync will detect and add
+    it.
 servers:
   - url: http://localhost:3000
     description: Local development server
-
 paths:
   /users:
     get:
@@ -18,7 +16,7 @@ paths:
       tags:
         - Users
       responses:
-        "200":
+        '200':
           description: A list of users with hashed IDs
           content:
             application/json:
@@ -38,4 +36,13 @@ paths:
                           example: Alice
                         hashedId:
                           type: string
-                          example: "5f4dcc3b5aa765d61d8327de..."
+                          example: 5f4dcc3b5aa765d61d8327de...
+  /report:
+    post:
+      summary: POST /report
+      operationId: postreport
+      tags:
+        - report
+      responses:
+        '200':
+          description: Success

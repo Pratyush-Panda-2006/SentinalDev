@@ -1,0 +1,162 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# SentinelDev Autonomous Audit — GitHub Actions Workflow
+#
+# Triggers on every pull_request (opened, synchronised, reopened) and on
+# direct pushes to main/master.
+#
+# What it does:
+#   1. Checks out the repo (with full history so git diff works).
+#   2. Installs Node dependencies.
+#   3. Runs SentinelDev's GIT_DIFF blast-radius audit against the PR diff.
+#   4. Generates sentinel-report.html and sentinel-pr-comment.md.
+#   5. Uploads both artefacts to the Actions run.
+#   6. For pull_request events: posts (or updates) a PR comment with the
+#      full risk report using actions/github-script.
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: SentinelDev Audit
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: ['**']
+  push:
+    branches:
+      - main
+      - master
+
+# Allow the job to write PR comments
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  sentineldev-audit:
+    name: Blast-Radius & CVE Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # ── 1. Checkout ─────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Full history needed for git diff baseline
+          fetch-depth: 0
+
+      # ── 2. Node.js setup ────────────────────────────────────────────────────
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # ── 3. Install SentinelDev (works for both inline usage and consumers) ──
+      - name: Install dependencies
+        run: npm ci
+
+      # ── 4. Run GIT_DIFF blast-radius audit ──────────────────────────────────
+      #
+      # On a pull_request event, compare HEAD against the PR base branch.
+      # On a push to main/master, compare HEAD against HEAD~1.
+      #
+      # The audit result is written to:
+      #   sentinel-report.html      — rich HTML report
+      #   sentinel-pr-comment.md    — GitHub-ready Markdown comment
+      - name: Determine diff base
+        id: diff-base
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "base=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "base=HEAD~1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run SentinelDev Audit
+        id: audit
+        env:
+          SENTINELDEV_BASE_SHA: ${{ steps.diff-base.outputs.base }}
+          SENTINELDEV_PROJECT_ROOT: ${{ github.workspace }}
+        run: |
+          # Run the GIT_DIFF pipeline against the current workspace.
+          # SentinelDev reads SENTINELDEV_BASE_SHA to scope the diff.
+          npx tsx src/index.ts \
+            --trigger-kind GIT_DIFF \
+            --project-root "$SENTINELDEV_PROJECT_ROOT"
+
+          # Extract the risk score for step summary
+          if [ -f sentinel-pr-comment.md ]; then
+            SCORE=$(grep -oP '(?<=Risk Assessment: \*\*).*?(?=\*\*)' sentinel-pr-comment.md | head -1 || echo "UNKNOWN")
+            echo "risk_score=${SCORE}" >> "$GITHUB_OUTPUT"
+            echo "comment_exists=true"  >> "$GITHUB_OUTPUT"
+          else
+            echo "risk_score=UNKNOWN"  >> "$GITHUB_OUTPUT"
+            echo "comment_exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── 5. Upload artefacts ─────────────────────────────────────────────────
+      - name: Upload HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sentinel-report-${{ github.run_number }}
+          path: |
+            sentinel-report.html
+            sentinel-pr-comment.md
+          if-no-files-found: warn
+          retention-days: 30
+
+      # ── 6. Write GitHub Step Summary ────────────────────────────────────────
+      - name: Write step summary
+        if: always() && steps.audit.outputs.comment_exists == 'true'
+        run: |
+          echo "## 🛡️ SentinelDev Audit Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Risk Score:** \`${{ steps.audit.outputs.risk_score }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          cat sentinel-pr-comment.md >> "$GITHUB_STEP_SUMMARY"
+
+      # ── 7. Post / update PR comment ─────────────────────────────────────────
+      - name: Post PR comment
+        if: github.event_name == 'pull_request' && steps.audit.outputs.comment_exists == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs   = require('fs');
+            const path = require('path');
+
+            // Read the generated Markdown comment
+            const commentPath = path.join(process.env.GITHUB_WORKSPACE, 'sentinel-pr-comment.md');
+            if (!fs.existsSync(commentPath)) {
+              console.log('sentinel-pr-comment.md not found — skipping comment');
+              return;
+            }
+            const body = fs.readFileSync(commentPath, 'utf8');
+
+            const { owner, repo } = context.repo;
+            const issue_number    = context.issue.number;
+            const MARKER          = '<!-- sentineldev-audit-comment -->';
+            const fullBody        = `${MARKER}\n${body}`;
+
+            // Find an existing SentinelDev comment to update (avoid duplicates)
+            const { data: comments } = await github.rest.issues.listComments({
+              owner, repo, issue_number, per_page: 100,
+            });
+
+            const existing = comments.find(c => c.body && c.body.includes(MARKER));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner, repo,
+                comment_id: existing.id,
+                body: fullBody,
+              });
+              console.log(`Updated existing SentinelDev comment #${existing.id}`);
+            } else {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number,
+                body: fullBody,
+              });
+              console.log('Created new SentinelDev PR comment');
+            }

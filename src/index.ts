@@ -6,10 +6,21 @@ import { seedMockTarget } from './seed';
 
 // ─── CLI Argument Parsing ─────────────────────────────────────────────────────
 
-function parseArgs(): { triggerFile?: string; demo: boolean } {
+interface ParsedArgs {
+  triggerFile?: string;
+  demo: boolean;
+  /** --trigger-kind GIT_DIFF | CVE_ADVISORY  (from bin/sentineldev.js) */
+  triggerKind?: string;
+  /** --project-root <path>  (from bin/sentineldev.js) */
+  projectRoot?: string;
+}
+
+function parseArgs(): ParsedArgs {
   const args = process.argv.slice(2);
   let triggerFile: string | undefined;
   let demo = false;
+  let triggerKind: string | undefined;
+  let projectRoot: string | undefined;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--trigger' && args[i + 1]) {
@@ -18,9 +29,15 @@ function parseArgs(): { triggerFile?: string; demo: boolean } {
     if (args[i] === '--demo') {
       demo = true;
     }
+    if (args[i] === '--trigger-kind' && args[i + 1]) {
+      triggerKind = args[++i];
+    }
+    if (args[i] === '--project-root' && args[i + 1]) {
+      projectRoot = path.resolve(args[++i]);
+    }
   }
 
-  return { triggerFile, demo };
+  return { triggerFile, demo, triggerKind, projectRoot };
 }
 
 // ─── Built-in Demo Trigger ────────────────────────────────────────────────────
@@ -51,11 +68,29 @@ function printReport(report: unknown): void {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
-  const { triggerFile, demo } = parseArgs();
+  const { triggerFile, demo, triggerKind, projectRoot } = parseArgs();
 
   let trigger: Trigger;
 
-  if (demo || (!triggerFile && process.argv.length <= 2)) {
+  // ── Direct trigger-kind mode (from bin/sentineldev.js) ───────────────────
+  if (triggerKind && projectRoot) {
+    if (triggerKind === 'CVE_ADVISORY') {
+      trigger = {
+        kind: 'CVE_ADVISORY',
+        cveId: 'CVE-2024-DEMO01',
+        packageName: 'crypto-utils',
+        affectedVersionRange: '<2.0.0',
+        deprecatedMethods: { encryptMD5: 'encryptSHA256' },
+        projectRoot,
+      };
+    } else {
+      trigger = {
+        kind: 'GIT_DIFF',
+        changedFiles: [],
+        projectRoot,
+      };
+    }
+  } else if (demo || (!triggerFile && process.argv.length <= 2)) {
     console.log('[SentinelDev] Running built-in CVE demo...');
     // Seed a fresh copy of mock-target before running
     seedMockTarget();
@@ -84,7 +119,7 @@ async function main(): Promise<void> {
     // Seed mock-target before running so every run starts clean
     seedMockTarget();
   } else {
-    console.error('[SentinelDev] Usage: ts-node src/index.ts [--demo] [--trigger <file>]');
+    console.error('[SentinelDev] Usage: tsx src/index.ts [--demo] [--trigger <file>] [--trigger-kind <kind> --project-root <path>]');
     process.exit(1);
   }
 

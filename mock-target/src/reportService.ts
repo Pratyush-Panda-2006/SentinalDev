@@ -11,7 +11,7 @@ export interface Report {
  * Currently uses encryptMD5 — flagged by CVE-2024-DEMO01.
  */
 export function signReport(payload: string): string {
-  return encryptMD5(payload);
+  return encryptSHA256(payload);
 }
 
 /**

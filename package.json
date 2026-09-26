@@ -3,8 +3,20 @@
   "version": "1.0.0",
   "description": "Autonomous Lifecycle & Blast-Radius Engine — IBM Bob 2.0 Hackathon",
   "main": "dist/index.js",
+  "bin": {
+    "sentineldev": "./bin/sentineldev.js"
+  },
+  "files": [
+    "bin/",
+    "dist/",
+    "src/public/",
+    "mock-target/",
+    "triggers/",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc --project tsconfig.json",
+    "prepublishOnly": "npm run build",
     "start": "node dist/index.js",
     "ui": "tsx src/app.ts",
     "dev": "tsx watch src/app.ts",
@@ -15,12 +27,16 @@
     "report:open": "start sentinel-report.html || open sentinel-report.html"
   },
   "dependencies": {
+    "adm-zip": "^0.6.1",
+    "busboy": "^1.6.0",
     "diff": "^5.2.0",
     "js-yaml": "^4.1.0",
     "simple-git": "^4.0.1",
     "ts-morph": "^22.0.0"
   },
   "devDependencies": {
+    "@types/adm-zip": "^0.5.8",
+    "@types/busboy": "^1.5.4",
     "@types/diff": "^5.2.1",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.14.0",
