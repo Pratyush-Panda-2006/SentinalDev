@@ -15,6 +15,7 @@ import * as http from 'http';
 import * as fs from 'fs';
 import * as path from 'path';
 
+
 import { runPipeline } from './orchestrator';
 import { seedMockTarget } from './seed';
 import { CVEAdvisoryTrigger, GitDiffTrigger } from './types/index';
@@ -94,6 +95,35 @@ function buildBlastTrigger(projectRoot: string, changedFiles: string[]): GitDiff
     changedFiles,
     projectRoot,
   };
+}
+
+/**
+ * Recursively collects all TypeScript / JavaScript source files under a
+ * project root, skipping node_modules, .git, dist, build, and coverage dirs.
+ */
+function collectSourceFiles(dir: string): string[] {
+  const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', 'coverage', '.next', 'out']);
+  const SOURCE_EXTS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']);
+  const results: string[] = [];
+
+  function walk(current: string): void {
+    let entries: fs.Dirent[];
+    try { entries = fs.readdirSync(current, { withFileTypes: true }); }
+    catch { return; }
+
+    for (const entry of entries) {
+      if (SKIP_DIRS.has(entry.name)) continue;
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+      } else if (entry.isFile() && SOURCE_EXTS.has(path.extname(entry.name).toLowerCase())) {
+        results.push(full);
+      }
+    }
+  }
+
+  walk(dir);
+  return results;
 }
 
 /** Read the entire POST body as a string, then parse as JSON (best-effort). */
@@ -210,9 +240,9 @@ const server = http.createServer(async (req, res) => {
   if (method === 'POST' && urlPath === '/api/clone-repo') {
     let sandboxPath: string | null = null;
     try {
-      const body      = await readJsonBody(req);
-      const repoUrl   = body.repoUrl   as string | undefined;
-      const branch    = body.branch    as string | undefined;
+      const body        = await readJsonBody(req);
+      const repoUrl     = body.repoUrl     as string | undefined;
+      const branch      = body.branch      as string | undefined;
       const triggerKind = (body.triggerKind as string | undefined) ?? 'GIT_DIFF';
 
       if (!repoUrl || !isValidGitUrl(repoUrl)) {
@@ -220,25 +250,27 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
-      console.log(`[API] POST /api/clone-repo | url=${repoUrl} | branch=${branch ?? 'default'}`);
+      console.log(`[API] POST /api/clone-repo | url=${repoUrl} | branch=${branch ?? 'default'} | trigger=${triggerKind}`);
       const { sandboxPath: sp, repoName } = await cloneRepository(repoUrl, branch);
       sandboxPath = sp;
 
       console.log(`[API] Cloned "${repoName}" into sandbox: ${sandboxPath}`);
 
+      // Collect all source files recursively — no src/ assumption
+      const allFiles = collectSourceFiles(sandboxPath);
+      console.log(`[API] Found ${allFiles.length} source file(s) in cloned repo`);
+
       let report;
       if (triggerKind === 'CVE_ADVISORY') {
-        const trigger = buildCveTrigger(sandboxPath);
-        const result  = await runPipeline(trigger, process.cwd());
+        // For external repos, pass all discovered source files so every agent
+        // can scan the full codebase rather than relying on glob patterns alone.
+        const trigger: CVEAdvisoryTrigger = { ...buildCveTrigger(sandboxPath), allSourceFiles: allFiles };
+        const result = await runPipeline(trigger, process.cwd());
         report = result.report;
       } else {
         const { changedFiles, diff } = await inspectRepoChanges(sandboxPath);
-        const files = changedFiles.length > 0
-          ? changedFiles
-          : (fs.readdirSync(path.join(sandboxPath, 'src').replace(/\\/g, '/'))
-               .filter(f => f.endsWith('.ts'))
-               .map(f => path.resolve(sandboxPath!, 'src', f))
-             );
+        // Fall back to all source files if git reports nothing (fresh clone = no dirty state)
+        const files = changedFiles.length > 0 ? changedFiles : allFiles;
         const trigger = buildBlastTrigger(sandboxPath, files);
         const result  = await runPipeline(trigger, process.cwd(), diff);
         report = result.report;
@@ -272,19 +304,17 @@ const server = http.createServer(async (req, res) => {
 
       console.log(`[API] Extracted "${repoName}" into sandbox: ${sandboxPath}`);
 
+      const allFiles = collectSourceFiles(sandboxPath);
+      console.log(`[API] Found ${allFiles.length} source file(s) in extracted ZIP`);
+
       let report;
       if (triggerKind === 'CVE_ADVISORY') {
-        const trigger = buildCveTrigger(sandboxPath);
-        const result  = await runPipeline(trigger, process.cwd());
+        const trigger: CVEAdvisoryTrigger = { ...buildCveTrigger(sandboxPath), allSourceFiles: allFiles };
+        const result = await runPipeline(trigger, process.cwd());
         report = result.report;
       } else {
         const { changedFiles, diff } = await inspectRepoChanges(sandboxPath);
-        const srcDir = path.join(sandboxPath, 'src');
-        const files  = changedFiles.length > 0
-          ? changedFiles
-          : (fs.existsSync(srcDir)
-              ? fs.readdirSync(srcDir).filter(f => f.endsWith('.ts')).map(f => path.resolve(srcDir, f))
-              : []);
+        const files = changedFiles.length > 0 ? changedFiles : allFiles;
         const trigger = buildBlastTrigger(sandboxPath, files);
         const result  = await runPipeline(trigger, process.cwd(), diff);
         report = result.report;
@@ -331,7 +361,23 @@ const server = http.createServer(async (req, res) => {
   sendJson(res, 404, { ok: false, error: `No route: ${method} ${urlPath}` });
 });
 
+// ─── Resilience: keep the server alive on unhandled errors ───────────────────
+
+process.on('uncaughtException', (err) => {
+  console.error('[SentinelDev] Uncaught exception (server kept alive):', err.message);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[SentinelDev] Unhandled rejection (server kept alive):', reason);
+});
+
 // ─── Start ───────────────────────────────────────────────────────────────────
+
+// Allow up to 10 minutes for long clone + analysis runs.
+// The browser will still show a spinner; the server won't drop the connection.
+server.timeout = 10 * 60 * 1000; // 10 min
+server.requestTimeout = 10 * 60 * 1000;
+server.headersTimeout = 10 * 60 * 1000 + 1000;
 
 server.listen(PORT, () => {
   console.log(`SentinelDev Dashboard running at http://localhost:${PORT}`);

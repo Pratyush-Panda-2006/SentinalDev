@@ -20,6 +20,12 @@ export interface CVEAdvisoryTrigger {
   deprecatedMethods: Record<string, string>;
   /** Absolute path of the project under analysis */
   projectRoot: string;
+  /**
+   * Pre-collected list of all source file paths in the project.
+   * Populated by the API layer for external repos so every agent receives
+   * real files to analyse instead of relying on glob patterns alone.
+   */
+  allSourceFiles?: string[];
 }
 
 export type Trigger = GitDiffTrigger | CVEAdvisoryTrigger;

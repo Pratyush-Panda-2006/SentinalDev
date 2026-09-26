@@ -51,12 +51,19 @@ export async function runPipeline(
 
     // ── Stage 2: Blast Radius (on patched files) ──────────────────────────
     console.log('\n── Stage 2/3: BlastRadiusAuditor ────────────────────────');
-    blastRadius = await runBlastRadiusAudit(trigger, remediation.affectedFiles);
+    // For external repos the remediation may have found 0 affected files
+    // (the repo doesn't use crypto-utils). Fall back to all source files so
+    // BlastRadiusAuditor still produces a real call-graph for the repo.
+    const blastFiles =
+      remediation.affectedFiles.length > 0
+        ? remediation.affectedFiles
+        : (trigger.allSourceFiles ?? []);
+    blastRadius = await runBlastRadiusAudit(trigger, blastFiles);
 
     // ── Stage 3: DocuSync ─────────────────────────────────────────────────
     console.log('\n── Stage 3/3: DocuSync ──────────────────────────────────');
-    // For CVE flow, scan all source files (remediation may touch any file)
-    docSync = await runDocuSync(trigger, []);
+    // Pass allSourceFiles so DocuSync can scan the full project for routes
+    docSync = await runDocuSync(trigger, [], trigger.allSourceFiles);
   } else {
     // GIT_DIFF flow
 

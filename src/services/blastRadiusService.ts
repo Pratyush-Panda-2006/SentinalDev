@@ -142,13 +142,37 @@ export function analyzeBlastRadius(
     skipAddingFilesFromTsConfig: true,
   });
 
-  // Add all TypeScript files under the project root
-  project.addSourceFilesAtPaths(path.join(projectRoot, '**/*.ts'));
+  // Add all TypeScript and JavaScript files under the project root,
+  // skipping node_modules so ts-morph doesn't crawl the entire dependency tree.
+  const projectGlob = path.join(projectRoot).replace(/\\/g, '/');
+  project.addSourceFilesAtPaths([
+    `${projectGlob}/**/*.ts`,
+    `${projectGlob}/**/*.tsx`,
+    `${projectGlob}/**/*.js`,
+    `${projectGlob}/**/*.jsx`,
+    `!${projectGlob}/**/node_modules/**`,
+  ]);
+
+  // Cap at 50 files for blast-radius analysis to avoid OOM on large repos.
+  // Prioritise files that look like they contain exports (heuristic: not test/spec files).
+  const MAX_BLAST_FILES = 50;
+  const cappedFiles = changedFiles.length > MAX_BLAST_FILES
+    ? changedFiles
+        .filter(f => !/\.(test|spec)\.(ts|tsx|js|jsx)$/.test(f))
+        .slice(0, MAX_BLAST_FILES)
+    : changedFiles;
+
+  if (changedFiles.length > MAX_BLAST_FILES) {
+    console.warn(
+      `[BlastRadius] Repo has ${changedFiles.length} files — capping analysis at ${MAX_BLAST_FILES} ` +
+      `to prevent OOM. Results cover the most significant source files.`
+    );
+  }
 
   const allTrees: CallGraphNode[] = [];
   const visited = new Set<string>();
 
-  for (const changedFile of changedFiles) {
+  for (const changedFile of cappedFiles) {
     let sf: SourceFile | undefined;
 
     try {

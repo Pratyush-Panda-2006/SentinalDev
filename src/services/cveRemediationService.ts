@@ -32,7 +32,14 @@ export async function remediateCVE(
     skipAddingFilesFromTsConfig: true,
   });
 
-  project.addSourceFilesAtPaths(path.join(projectRoot, '**/*.ts'));
+  const projectGlob = path.join(projectRoot).replace(/\\/g, '/');
+  project.addSourceFilesAtPaths([
+    `${projectGlob}/**/*.ts`,
+    `${projectGlob}/**/*.tsx`,
+    `${projectGlob}/**/*.js`,
+    `${projectGlob}/**/*.jsx`,
+    `!${projectGlob}/**/node_modules/**`,
+  ]);
 
   // Snapshot original file texts before any mutation
   const originalTexts = new Map<string, string>();

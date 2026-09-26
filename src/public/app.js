@@ -8,6 +8,26 @@ const logs = [];
 /** Currently staged ZIP file for upload */
 let stagedZipFile = null;
 
+// ─── Fetch with timeout ───────────────────────────────────────────────────────
+// Wraps fetch with an AbortController timeout so large repos that take a long
+// time to analyse show a clear "timed out" message instead of "Failed to fetch".
+const FETCH_TIMEOUT_MS = 9 * 60 * 1000; // 9 min (server allows 10 min)
+
+async function fetchWithTimeout(url, options = {}) {
+  const controller = new AbortController();
+  const tid = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error('Request timed out (> 9 min). The repository may be too large — try a smaller repo or use the AST Blast-Radius Audit instead.');
+    }
+    throw err;
+  } finally {
+    clearTimeout(tid);
+  }
+}
+
 // ─── Page / nav switching ─────────────────────────────────────────────────────
 
 function switchNav(btn, page) {
@@ -326,7 +346,7 @@ async function runPipeline(triggerKind) {
 
     advanceProgress(30, 'Running agents…');
 
-    const res  = await fetch('/api/run-pipeline', {
+    const res  = await fetchWithTimeout('/api/run-pipeline', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify(body),
@@ -535,7 +555,7 @@ async function runClone(triggerKind) {
 
     advanceProgress(25, 'Waiting for clone…');
 
-    const res  = await fetch('/api/clone-repo', {
+    const res  = await fetchWithTimeout('/api/clone-repo', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify(body),
@@ -589,7 +609,7 @@ async function runZipUpload(triggerKind) {
 
     advanceProgress(30, 'Extracting and analysing…');
 
-    const res  = await fetch('/api/upload-zip', { method: 'POST', body: form });
+    const res  = await fetchWithTimeout('/api/upload-zip', { method: 'POST', body: form });
     const data = await res.json();
 
     if (!res.ok || !data.ok) {

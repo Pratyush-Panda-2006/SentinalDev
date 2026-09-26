@@ -14,19 +14,25 @@ import { Trigger, SpecSyncResult } from '../types/index';
  */
 export async function runDocuSync(
   trigger: Trigger,
-  changedFilesOverride?: string[]
+  changedFilesOverride?: string[],
+  allSourceFiles?: string[]
 ): Promise<SpecSyncResult> {
   const projectRoot = trigger.projectRoot;
 
-  // For GIT_DIFF, use the trigger's changedFiles; for CVE, use the override
-  const changedFiles: string[] =
-    changedFilesOverride && changedFilesOverride.length > 0
-      ? changedFilesOverride
-      : trigger.kind === 'GIT_DIFF'
-        ? trigger.changedFiles.map((f) =>
-            path.isAbsolute(f) ? f : path.resolve(projectRoot, f)
-          )
-        : [];
+  // Priority: explicit override > allSourceFiles (external repo full scan) >
+  //           GIT_DIFF changedFiles > empty (docuSyncService will glob internally)
+  let changedFiles: string[];
+  if (changedFilesOverride && changedFilesOverride.length > 0) {
+    changedFiles = changedFilesOverride;
+  } else if (allSourceFiles && allSourceFiles.length > 0) {
+    changedFiles = allSourceFiles;
+  } else if (trigger.kind === 'GIT_DIFF') {
+    changedFiles = trigger.changedFiles.map((f) =>
+      path.isAbsolute(f) ? f : path.resolve(projectRoot, f)
+    );
+  } else {
+    changedFiles = [];
+  }
 
   console.log(
     `[DocuSync] Scanning ${changedFiles.length > 0 ? changedFiles.length + ' file(s)' : 'all source files'} ` +
