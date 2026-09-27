@@ -1,0 +1,1 @@
+{"version":3,"file":"gitService.d.ts","sourceRoot":"","sources":["../../src/services/gitService.ts"],"names":[],"mappings":"AAIA,4FAA4F;AAC5F,MAAM,WAAW,cAAc;IAC7B,YAAY,EAAE,MAAM,EAAE,CAAC;IACvB,IAAI,EAAE,MAAM,CAAC;CACd;AAID;;;;;;;;;;;GAWG;AACH,wBAAsB,kBAAkB,CACtC,cAAc,EAAE,MAAM,EACtB,UAAU,GAAE,MAAe,GAC1B,OAAO,CAAC,cAAc,CAAC,CAqEzB"}

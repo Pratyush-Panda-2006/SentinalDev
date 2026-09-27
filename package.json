@@ -24,25 +24,41 @@
     "demo": "tsx src/index.ts --demo",
     "demo:gitdiff": "tsx src/index.ts --trigger triggers/gitdiff-trigger.json",
     "demo:cve": "tsx src/index.ts --trigger triggers/cve-trigger.json",
-    "report:open": "start sentinel-report.html || open sentinel-report.html"
+    "report:open": "start sentinel-report.html || open sentinel-report.html",
+    "dev:vite": "vite --port 5199",
+    "build:client": "vite build"
   },
   "dependencies": {
+    "@google/genai": "^2.24.0",
     "adm-zip": "^0.6.1",
     "busboy": "^1.6.0",
     "diff": "^5.2.0",
+    "dotenv": "^18.0.4",
     "js-yaml": "^4.1.0",
+    "lucide-react": "^1.48.0",
+    "mermaid": "^12.0.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "simple-git": "^4.0.1",
     "ts-morph": "^22.0.0"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
     "@types/adm-zip": "^0.5.8",
     "@types/busboy": "^1.5.4",
     "@types/diff": "^5.2.1",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.14.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "autoprefixer": "^10.6.1",
+    "postcss": "^8.5.28",
+    "tailwindcss": "^4.3.3",
     "ts-node": "^10.9.2",
     "tsx": "^4.7.0",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "vite": "^8.3.1"
   },
   "engines": {
     "node": ">=18.0.0"

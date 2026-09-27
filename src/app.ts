@@ -27,6 +27,7 @@ import {
   parseMultipartUpload,
   isValidGitUrl,
 } from './services/repoIngestionService';
+import { generateExecutiveSummary } from './services/geminiService';
 
 const PORT = 3000;
 const PUBLIC_DIR = path.resolve(__dirname, 'public');
@@ -166,8 +167,8 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // ── GET / → serve dashboard ────────────────────────────────────────────────
-  if (method === 'GET' && urlPath === '/') {
+  // ── GET / or /demo or /app → serve dashboard ───────────────────────────────────────────────
+  if (method === 'GET' && (urlPath === '/' || urlPath === '/demo' || urlPath === '/app')) {
     serveStatic(path.join(PUBLIC_DIR, 'index.html'), res);
     return;
   }
@@ -231,6 +232,28 @@ const server = http.createServer(async (req, res) => {
       }
     } catch (err) {
       console.error('[API] Pipeline error:', (err as Error).message);
+      sendJson(res, 500, { ok: false, error: (err as Error).message });
+    }
+    return;
+  }
+
+  // ── POST /api/ai-summary → Generate Gemini PR Executive Briefing ───────────
+  if (method === 'POST' && urlPath === '/api/ai-summary') {
+    try {
+      const body = await readJsonBody(req);
+      const summary = await generateExecutiveSummary({
+        blastRadiusScore: body.blastRadiusScore as string | undefined,
+        filesImpacted: body.filesImpacted as number | undefined,
+        breakingSignatures: body.breakingSignatures as string[] | undefined,
+        callSitesPatched: body.callSitesPatched as number | undefined,
+        exposedEndpoints: body.exposedEndpoints as number | undefined,
+        diffSnippet: body.diffSnippet as string | undefined,
+        repoName: body.repoName as string | undefined,
+      });
+
+      sendJson(res, 200, { ok: true, summary });
+    } catch (err) {
+      console.error('[API] Gemini summary error:', (err as Error).message);
       sendJson(res, 500, { ok: false, error: (err as Error).message });
     }
     return;

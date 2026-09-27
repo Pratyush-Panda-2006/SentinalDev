@@ -158,8 +158,8 @@ export function analyzeBlastRadius(
   const MAX_BLAST_FILES = 50;
   const cappedFiles = changedFiles.length > MAX_BLAST_FILES
     ? changedFiles
-        .filter(f => !/\.(test|spec)\.(ts|tsx|js|jsx)$/.test(f))
-        .slice(0, MAX_BLAST_FILES)
+      .filter(f => !/\.(test|spec)\.(ts|tsx|js|jsx)$/.test(f))
+      .slice(0, MAX_BLAST_FILES)
     : changedFiles;
 
   if (changedFiles.length > MAX_BLAST_FILES) {

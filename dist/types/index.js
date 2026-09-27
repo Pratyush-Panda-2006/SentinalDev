@@ -1,0 +1,4 @@
+"use strict";
+// ─── Trigger Payloads ────────────────────────────────────────────────────────
+Object.defineProperty(exports, "__esModule", { value: true });
+//# sourceMappingURL=index.js.map

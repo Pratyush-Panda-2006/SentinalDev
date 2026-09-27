@@ -16,5 +16,5 @@
     "sourceMap": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "mock-target"]
+  "exclude": ["node_modules", "dist", "mock-target", "src/client"]
 }

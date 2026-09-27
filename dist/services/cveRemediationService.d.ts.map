@@ -1,0 +1,1 @@
+{"version":3,"file":"cveRemediationService.d.ts","sourceRoot":"","sources":["../../src/services/cveRemediationService.ts"],"names":[],"mappings":"AAIA,OAAO,EAAE,kBAAkB,EAAE,kBAAkB,EAAE,MAAM,gBAAgB,CAAC;AAOxE;;;;;;;;GAQG;AACH,wBAAsB,YAAY,CAChC,OAAO,EAAE,kBAAkB,GAC1B,OAAO,CAAC,kBAAkB,CAAC,CAmH7B"}
