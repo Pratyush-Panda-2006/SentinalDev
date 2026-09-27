@@ -264,9 +264,13 @@ const server = http.createServer(async (req, res) => {
     let sandboxPath: string | null = null;
     try {
       const body        = await readJsonBody(req);
-      const repoUrl     = body.repoUrl     as string | undefined;
+      let repoUrl       = (body.repoUrl as string | undefined)?.trim();
       const branch      = body.branch      as string | undefined;
       const triggerKind = (body.triggerKind as string | undefined) ?? 'GIT_DIFF';
+
+      if (repoUrl && !/^https?:\/\//i.test(repoUrl) && !/^git:\/\//i.test(repoUrl)) {
+        repoUrl = 'https://' + repoUrl;
+      }
 
       if (!repoUrl || !isValidGitUrl(repoUrl)) {
         sendJson(res, 400, { ok: false, error: 'repoUrl must be a valid https:// git URL' });

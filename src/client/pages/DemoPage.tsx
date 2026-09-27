@@ -51,6 +51,8 @@ export const DemoPage: React.FC<DemoPageProps> = ({ onBack, initialAction }) => 
     risk: string;
     callers: string[];
     callees: string[];
+    line?: number;
+    functionName?: string;
   } | null>({
     id: 'crypto-utils.ts',
     file: 'src/lib/crypto-utils.ts',
@@ -59,6 +61,9 @@ export const DemoPage: React.FC<DemoPageProps> = ({ onBack, initialAction }) => 
     callers: ['userService.ts:42', 'reportService.ts:65'],
     callees: ['node:crypto (createHash md5)'],
   });
+
+  const graphContainerRef = useRef<HTMLDivElement | null>(null);
+  const nodeMapRef = useRef<Map<string, any>>(new Map());
 
   // Report & execution state
   const [report, setReport] = useState<any>(null);
@@ -87,6 +92,266 @@ export const DemoPage: React.FC<DemoPageProps> = ({ onBack, initialAction }) => 
     }
   }, [logs]);
 
+  // Dynamic Mermaid Call Graph Builder
+  const renderGraph = async () => {
+    if (!graphContainerRef.current) return;
+    const mermaid = (window as any).mermaid;
+    if (!mermaid) return;
+
+    const basename = (p: string) => (p || '').split(/[\\/]/).pop() || p;
+    const cleanId = (s: string) => s.replace(/[^a-zA-Z0-9_]/g, '_').slice(0, 38);
+    const edges = new Set<string>();
+    const nodeMap = new Map<string, any>();
+    const styleDefs = new Set<string>();
+
+    const registerNode = (id: string, file: string, fn: string, role: string, risk: string, line?: number) => {
+      if (!nodeMap.has(id)) {
+        nodeMap.set(id, {
+          id: basename(file),
+          file,
+          functionName: fn,
+          role,
+          risk,
+          line: line || 1,
+          callers: [],
+          callees: [],
+        });
+      }
+    };
+
+    if (report?.blastRadius?.callGraphTree?.length > 0) {
+      const tree = report.blastRadius.callGraphTree;
+      const walk = (nodes: any[]) => {
+        nodes.forEach((n: any) => {
+          const targetFile = n.file;
+          const targetFn = n.functionName || '<module>';
+          const targetId = cleanId(basename(targetFile) + '_' + targetFn);
+          const isTargetVuln = targetFile.includes('crypto-utils') || 
+            (report?.remediation?.affectedFiles?.some((f: string) => f.includes(basename(targetFile))));
+
+          registerNode(
+            targetId,
+            targetFile,
+            targetFn,
+            isTargetVuln ? 'CVE Vulnerability Target' : 'Downstream Service Dependency',
+            isTargetVuln ? 'CRITICAL (Target Vulnerability)' : 'MED (AST Call Dependency)',
+            n.line
+          );
+
+          if (isTargetVuln) {
+            styleDefs.add(`  style ${targetId} fill:#2b0c10,stroke:#f85149,stroke-width:2.5px,color:#f85149`);
+          } else {
+            styleDefs.add(`  style ${targetId} fill:#161b22,stroke:#388bfd,stroke-width:1.8px,color:#cdd9e5`);
+          }
+
+          n.calledBy?.forEach((child: any) => {
+            const callerFile = child.file;
+            const callerFn = child.functionName || '<anonymous>';
+            const callerId = cleanId(basename(callerFile) + '_' + callerFn);
+            const isEntry = callerFile.includes('api') || callerFile.includes('server') || callerFile.includes('app') || callerFile.includes('index') || callerFile.includes('router');
+
+            registerNode(
+              callerId,
+              callerFile,
+              callerFn,
+              isEntry ? 'Entrypoint Route / Controller' : 'Transitive Service Caller',
+              isEntry ? 'LOW (Route Exposer)' : 'MED (Caller)',
+              child.line
+            );
+
+            if (isEntry) {
+              styleDefs.add(`  style ${callerId} fill:#161b22,stroke:#58a6ff,stroke-width:2px,color:#58a6ff`);
+            } else {
+              styleDefs.add(`  style ${callerId} fill:#161b22,stroke:#388bfd,stroke-width:1.8px,color:#cdd9e5`);
+            }
+
+            // Link caller -> callee in architecture flow
+            nodeMap.get(targetId)?.callees.push(`${basename(callerFile)}:${callerFn}`);
+            nodeMap.get(callerId)?.callers.push(`${basename(targetFile)}:${targetFn}`);
+
+            const callerLabel = `${basename(callerFile)}${callerFn && callerFn !== '<module>' && callerFn !== '<anonymous>' ? '\\n' + callerFn + '()' : ''}`;
+            const targetLabel = `${basename(targetFile)}${targetFn && targetFn !== '<module>' && targetFn !== '<anonymous>' ? '\\n' + targetFn + '()' : ''}`;
+
+            edges.add(`  ${targetId}["${targetLabel}"] --> ${callerId}["${callerLabel}"]`);
+
+            walk([child]);
+          });
+        });
+      };
+
+      walk(tree);
+
+      // Connect leaf service callers to CVE remediation target if available
+      if (report?.remediation) {
+        const cvePkg = report.remediation.packageName || 'crypto-utils';
+        const cveTargetId = cleanId(cvePkg + '_cve_target');
+        const safeMethod = Object.values(report.remediation.deprecatedMethods || {})[0] || 'encryptSHA256';
+
+        registerNode(
+          cveTargetId,
+          `src/lib/${cvePkg}.ts`,
+          String(safeMethod),
+          'CVE Vulnerability Target',
+          `CRITICAL (${report.remediation.cveId || 'CVE-2024-DEMO01'})`,
+          15
+        );
+        styleDefs.add(`  style ${cveTargetId} fill:#2b0c10,stroke:#f85149,stroke-width:2.5px,color:#f85149`);
+
+        for (const [id, node] of nodeMap.entries()) {
+          if (id !== cveTargetId && (node.functionName?.includes('sign') || node.functionName?.includes('hash') || node.file.includes('Service'))) {
+            edges.add(`  ${id} --> ${cveTargetId}["${basename(cvePkg)}.ts\\n${safeMethod}()"]`);
+            nodeMap.get(cveTargetId)?.callers.push(`${node.id}:${node.line}`);
+            node.callees.push(`${basename(cvePkg)}.ts:${safeMethod}`);
+          }
+        }
+      }
+    }
+
+    let def = '';
+    if (edges.size > 0) {
+      def = 'graph LR\n' + [...edges].join('\n') + '\n' + [...styleDefs].join('\n');
+    } else {
+      // Long connected graph chain (mock-target / initial interactive state)
+      def =
+        'graph LR\n' +
+        '  api_entry["src/api.ts\\nExpress Router"] --> us_get["src/userService.ts\\ngetUsers()"]\n' +
+        '  api_entry --> rs_build["src/reportService.ts\\nbuildReport()"]\n' +
+        '  us_get --> us_hash["src/userService.ts\\nhashUserId()"]\n' +
+        '  rs_build --> rs_sign["src/reportService.ts\\nsignReport()"]\n' +
+        '  us_hash --> cu_sha["src/lib/crypto-utils.ts\\nencryptSHA256()"]\n' +
+        '  rs_sign --> cu_sha\n' +
+        '  style cu_sha fill:#2b0c10,stroke:#f85149,stroke-width:2.5px,color:#f85149\n' +
+        '  style api_entry fill:#161b22,stroke:#58a6ff,stroke-width:2px,color:#58a6ff\n' +
+        '  style us_get fill:#161b22,stroke:#388bfd,stroke-width:1.8px,color:#cdd9e5\n' +
+        '  style us_hash fill:#161b22,stroke:#388bfd,stroke-width:1.8px,color:#cdd9e5\n' +
+        '  style rs_build fill:#161b22,stroke:#388bfd,stroke-width:1.8px,color:#cdd9e5\n' +
+        '  style rs_sign fill:#161b22,stroke:#388bfd,stroke-width:1.8px,color:#cdd9e5';
+
+      nodeMap.set('api_entry', {
+        id: 'api.ts',
+        file: 'src/api.ts',
+        role: 'Express Router Entrypoint',
+        risk: 'LOW (Direct Exposer)',
+        line: 1,
+        callers: ['Express app.use()'],
+        callees: ['userService.ts:getUsers()', 'reportService.ts:buildReport()'],
+      });
+      nodeMap.set('us_get', {
+        id: 'userService.ts',
+        file: 'src/userService.ts',
+        role: 'User Management Controller',
+        risk: 'MED (Signature Impacted)',
+        line: 20,
+        callers: ['api.ts:41'],
+        callees: ['userService.ts:hashUserId()'],
+      });
+      nodeMap.set('us_hash', {
+        id: 'userService.ts',
+        file: 'src/userService.ts',
+        role: 'User Identity Hashing Utility',
+        risk: 'MED (Call Site Refactored)',
+        line: 10,
+        callers: ['userService.ts:29'],
+        callees: ['crypto-utils.ts:encryptSHA256()'],
+      });
+      nodeMap.set('rs_build', {
+        id: 'reportService.ts',
+        file: 'src/reportService.ts',
+        role: 'Audit Report Builder',
+        risk: 'MED (Signature Impacted)',
+        line: 20,
+        callers: ['api.ts:48'],
+        callees: ['reportService.ts:signReport()'],
+      });
+      nodeMap.set('rs_sign', {
+        id: 'reportService.ts',
+        file: 'src/reportService.ts',
+        role: 'Cryptographic Signature Service',
+        risk: 'MED (Call Site Refactored)',
+        line: 10,
+        callers: ['reportService.ts:24'],
+        callees: ['crypto-utils.ts:encryptSHA256()'],
+      });
+      nodeMap.set('cu_sha', {
+        id: 'crypto-utils.ts',
+        file: 'src/lib/crypto-utils.ts',
+        role: 'CVE Vulnerability Target',
+        risk: 'CRITICAL (CVE-2024-DEMO01)',
+        line: 15,
+        callers: ['userService.ts:13', 'reportService.ts:13'],
+        callees: ['node:crypto (createHash sha256)'],
+      });
+    }
+
+    nodeMapRef.current = nodeMap;
+
+    try {
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: 'dark',
+        securityLevel: 'loose',
+        darkMode: true,
+        flowchart: {
+          curve: 'basis',
+          nodeSpacing: 45,
+          rankSpacing: 55,
+        },
+      });
+      const uid = 'mermaid-demo-' + Date.now();
+      const { svg } = await mermaid.render(uid, def);
+      if (graphContainerRef.current) {
+        graphContainerRef.current.innerHTML = svg;
+
+        const svgEl = graphContainerRef.current.querySelector('svg');
+        if (svgEl) {
+          svgEl.style.width = '100%';
+          svgEl.style.height = 'auto';
+          svgEl.style.minHeight = '280px';
+          svgEl.style.maxHeight = '520px';
+          svgEl.style.cursor = 'pointer';
+
+          // Attach interactive click listeners to nodes in rendered SVG
+          const nodeEls = svgEl.querySelectorAll('g.node');
+          nodeEls.forEach((el) => {
+            el.addEventListener('click', () => {
+              const textContent = el.textContent?.trim() || '';
+              for (const [key, data] of nodeMap.entries()) {
+                if (textContent.includes(data.id) || el.id?.includes(key) || textContent.includes(data.functionName)) {
+                  setSelectedNode(data);
+                  break;
+                }
+              }
+            });
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('Mermaid render error:', err);
+      if (graphContainerRef.current) {
+        graphContainerRef.current.innerHTML = `<pre class="text-xs text-white/50 text-left p-4">${def}</pre>`;
+      }
+    }
+  };
+
+  useEffect(() => {
+    let active = true;
+    const tryRender = () => {
+      if ((window as any).mermaid) {
+        if (active) renderGraph();
+      } else {
+        setTimeout(tryRender, 150);
+      }
+    };
+
+    if (activeTab === 'graph') {
+      tryRender();
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [activeTab, report]);
+
   // Execute pipeline (CVE or Blast audit)
   const executePipeline = async (kind: 'CVE_ADVISORY' | 'GIT_DIFF' = 'CVE_ADVISORY') => {
     if (isRunning) return;
@@ -95,40 +360,47 @@ export const DemoPage: React.FC<DemoPageProps> = ({ onBack, initialAction }) => 
     setStatusMessage('● Running...');
     setCurrentStep(1);
 
+    // Normalize target repository input
+    let repoToRun = targetRepo.trim();
+    if (!/^https?:\/\//i.test(repoToRun) && !/^git:\/\//i.test(repoToRun) && (repoToRun.includes('github.com') || repoToRun.includes('gitlab.com') || repoToRun.includes('bitbucket.org'))) {
+      repoToRun = 'https://' + repoToRun;
+      setTargetRepo(repoToRun);
+    }
+
     pushLog(`════════════════════════════════════════════════════`, 'stage');
     pushLog(`[Pipeline] Triggered: ${kind === 'CVE_ADVISORY' ? 'Full CVE Remediation' : 'AST Blast-Radius Audit'}`, 'stage');
-    pushLog(`[Target] Repository: ${targetRepo} (branch: ${branch})`, 'muted');
+    pushLog(`[Target] Repository: ${repoToRun} (branch: ${branch})`, 'muted');
 
-    // Simulate stepped pipeline stages
+    // Stepped pipeline progress simulations
     const stepTimer1 = setTimeout(() => {
       setCurrentStep(2);
-      pushLog(`[1. AST Ingestion] Parsed TypeScript AST across 3 project modules using ts-morph.`, 'ok');
+      pushLog(`[1. AST Ingestion] Parsed TypeScript AST across project modules using ts-morph.`, 'ok');
     }, 400);
 
     const stepTimer2 = setTimeout(() => {
       setCurrentStep(3);
-      pushLog(`[2. Call Graph Traversal] Discovered 2 upstream call sites referencing deprecated encryptMD5().`, 'ok');
+      pushLog(`[2. Call Graph Traversal] Discovered transitive callers & reference paths across project modules.`, 'ok');
     }, 850);
 
     const stepTimer3 = setTimeout(() => {
       setCurrentStep(4);
-      pushLog(`[3. Safe In-place Patching] Replacing symbol with encryptSHA256(data, salt) and verifying parameters.`, 'ok');
+      pushLog(`[3. Safe In-place Patching] Reconciling symbols and verifying parameter compatibility.`, 'ok');
     }, 1300);
 
     try {
       let res;
-      // If external repo URL is provided, clone and analyze
-      if (targetRepo.startsWith('http://') || targetRepo.startsWith('https://')) {
+      if (repoToRun.startsWith('http://') || repoToRun.startsWith('https://')) {
+        pushLog(`[Git Ingestion] Cloning remote repository: ${repoToRun}...`, 'stage');
         res = await fetch('/api/clone-repo', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ repoUrl: targetRepo, branch, triggerKind: kind }),
+          body: JSON.stringify({ repoUrl: repoToRun, branch, triggerKind: kind }),
         });
       } else {
         res = await fetch('/api/run-pipeline', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ triggerKind: kind, repoPath: targetRepo }),
+          body: JSON.stringify({ triggerKind: kind, repoPath: repoToRun }),
         });
       }
 
@@ -167,12 +439,12 @@ export const DemoPage: React.FC<DemoPageProps> = ({ onBack, initialAction }) => 
         body: JSON.stringify({
           repoName: targetRepo,
           blastRadiusScore: rep?.blastRadius?.blastRadiusScore || 'MED',
-          callSitesPatched: rep?.astRefactor?.patchedCallSites || 2,
-          filesImpacted: rep?.blastRadius?.impactedFilesCount || 1,
+          callSitesPatched: rep?.remediation?.callSitesRefactored || rep?.astRefactor?.patchedCallSites || 2,
+          filesImpacted: rep?.blastRadius?.impactedFiles?.length || rep?.blastRadius?.impactedFilesCount || 1,
           breakingSignatures: rep?.blastRadius?.breakingSignatures || [
             'encryptMD5(data: string) replaced with encryptSHA256(data: string, salt: string)',
           ],
-          exposedEndpoints: rep?.docuSync?.endpointsReconciled?.length || 1,
+          exposedEndpoints: rep?.docSync?.updatedEndpoints?.length || 1,
           diffSnippet: `- export function encryptMD5(data: string)\n+ export function encryptSHA256(data: string, salt: string)`,
         }),
       });
@@ -528,7 +800,7 @@ export const DemoPage: React.FC<DemoPageProps> = ({ onBack, initialAction }) => 
                       AST Caller Graph
                     </span>
                     <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded">
-                      Transitive Depth: 2
+                      Transitive Depth: {report?.blastRadius?.callGraphTree?.length ? '3' : '2'}
                     </span>
                   </div>
 
@@ -536,7 +808,7 @@ export const DemoPage: React.FC<DemoPageProps> = ({ onBack, initialAction }) => 
                   <div className="flex items-center gap-1 bg-[#161b22] border border-white/15 rounded-lg p-0.5">
                     <button
                       type="button"
-                      onClick={() => setZoomLevel((z) => Math.min(z + 0.15, 1.6))}
+                      onClick={() => setZoomLevel((z) => Math.min(z + 0.15, 1.8))}
                       className="p-1.5 hover:bg-white/10 rounded text-neutral-400 hover:text-white transition-colors cursor-pointer"
                       title="Zoom In"
                     >
@@ -544,7 +816,7 @@ export const DemoPage: React.FC<DemoPageProps> = ({ onBack, initialAction }) => 
                     </button>
                     <button
                       type="button"
-                      onClick={() => setZoomLevel((z) => Math.max(z - 0.15, 0.6))}
+                      onClick={() => setZoomLevel((z) => Math.max(z - 0.15, 0.4))}
                       className="p-1.5 hover:bg-white/10 rounded text-neutral-400 hover:text-white transition-colors cursor-pointer"
                       title="Zoom Out"
                     >
@@ -564,107 +836,24 @@ export const DemoPage: React.FC<DemoPageProps> = ({ onBack, initialAction }) => 
                   </div>
                 </div>
 
-                {/* Interactive SVG Canvas */}
-                <div className="flex-1 flex items-center justify-center p-6 overflow-auto">
+                {/* Interactive Diagram Canvas */}
+                <div className="flex-1 flex items-center justify-center p-4 overflow-auto min-h-[380px]">
                   <div
-                    style={{ transform: `scale(${zoomLevel})`, transition: 'transform 0.2s ease-out' }}
-                    className="w-full max-w-2xl flex flex-col items-center select-none"
+                    style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center center', transition: 'transform 0.2s ease-out' }}
+                    className="w-full h-full flex flex-col items-center justify-center select-none"
                   >
-                    <svg viewBox="0 0 540 220" className="w-full h-auto drop-shadow-xl" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <defs>
-                        <marker id="arrow-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#58a6ff" />
-                        </marker>
-                        <marker id="arrow-red" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                          <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#f85149" />
-                        </marker>
-                      </defs>
-
-                      {/* Connection Paths */}
-                      <path d="M 110 100 C 145 100, 155 50, 190 50" stroke="#58a6ff" strokeWidth="2" markerEnd="url(#arrow-blue)" />
-                      <path d="M 110 120 C 145 120, 155 170, 190 170" stroke="#58a6ff" strokeWidth="2" markerEnd="url(#arrow-blue)" />
-                      <path d="M 335 50 C 370 50, 380 100, 415 100" stroke="#f85149" strokeWidth="2" markerEnd="url(#arrow-red)" />
-                      <path d="M 335 170 C 370 170, 380 120, 415 120" stroke="#f85149" strokeWidth="2" markerEnd="url(#arrow-red)" />
-
-                      {/* Node 1: api.ts (Entrypoint) */}
-                      <g
-                        className="cursor-pointer transition-transform hover:scale-105"
-                        onClick={() =>
-                          setSelectedNode({
-                            id: 'api.ts',
-                            file: 'src/api.ts',
-                            role: 'Express Router Entrypoint',
-                            risk: 'LOW (Direct Exposer)',
-                            callers: ['Express app.use()'],
-                            callees: ['userService.ts', 'reportService.ts'],
-                          })
-                        }
-                      >
-                        <rect x="15" y="85" width="95" height="50" rx="10" fill="#161b22" stroke="#58a6ff" strokeWidth="2" />
-                        <text x="62" y="115" fill="#58a6ff" fontSize="13" fontFamily="monospace" fontWeight="bold" textAnchor="middle">api.ts</text>
-                      </g>
-
-                      {/* Node 2: userService.ts */}
-                      <g
-                        className="cursor-pointer transition-transform hover:scale-105"
-                        onClick={() =>
-                          setSelectedNode({
-                            id: 'userService.ts',
-                            file: 'src/userService.ts',
-                            role: 'User Management Service',
-                            risk: 'MED (Signature Impacted)',
-                            callers: ['api.ts:24'],
-                            callees: ['crypto-utils.ts:hashPassword'],
-                          })
-                        }
-                      >
-                        <rect x="190" y="25" width="145" height="50" rx="10" fill="#161b22" stroke="#388bfd" strokeWidth="2" />
-                        <text x="262" y="55" fill="#cdd9e5" fontSize="13" fontFamily="monospace" fontWeight="500" textAnchor="middle">userService.ts</text>
-                      </g>
-
-                      {/* Node 3: reportService.ts */}
-                      <g
-                        className="cursor-pointer transition-transform hover:scale-105"
-                        onClick={() =>
-                          setSelectedNode({
-                            id: 'reportService.ts',
-                            file: 'src/reportService.ts',
-                            role: 'Reporting Service',
-                            risk: 'LOW (Transitive Caller)',
-                            callers: ['api.ts:58'],
-                            callees: ['crypto-utils.ts:verifyPassword'],
-                          })
-                        }
-                      >
-                        <rect x="190" y="145" width="145" height="50" rx="10" fill="#161b22" stroke="#388bfd" strokeWidth="2" />
-                        <text x="262" y="175" fill="#cdd9e5" fontSize="13" fontFamily="monospace" fontWeight="500" textAnchor="middle">reportService.ts</text>
-                      </g>
-
-                      {/* Node 4: crypto-utils.ts (CVE Target) */}
-                      <g
-                        className="cursor-pointer transition-transform hover:scale-105"
-                        onClick={() =>
-                          setSelectedNode({
-                            id: 'crypto-utils.ts',
-                            file: 'src/lib/crypto-utils.ts',
-                            role: 'CVE Vulnerability Target',
-                            risk: 'CRITICAL (CVE-2024-DEMO01)',
-                            callers: ['userService.ts:42', 'reportService.ts:65'],
-                            callees: ['node:crypto'],
-                          })
-                        }
-                      >
-                        <rect x="415" y="85" width="145" height="50" rx="10" fill="#2b0c10" stroke="#f85149" strokeWidth="2.5" />
-                        <text x="487" y="115" fill="#f85149" fontSize="13" fontFamily="monospace" fontWeight="bold" textAnchor="middle">crypto-utils.ts</text>
-                      </g>
-                    </svg>
-
-                    <div className="mt-4 flex flex-wrap items-center justify-center gap-6 text-xs font-mono text-neutral-400">
-                      <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-[#58a6ff]" /> Route Entrypoint (api.ts)</span>
-                      <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-[#388bfd]" /> Direct / Transitive Callers</span>
-                      <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-[#f85149]" /> CVE Blast Target (crypto-utils.ts)</span>
-                    </div>
+                    <div
+                      id="blast-graph-container"
+                      ref={graphContainerRef}
+                      className="w-full flex items-center justify-center overflow-visible"
+                    />
                   </div>
+                </div>
+
+                <div className="pt-3 border-t border-white/10 flex flex-wrap items-center justify-center gap-6 text-xs font-mono text-neutral-400">
+                  <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-[#58a6ff]" /> Route Entrypoint</span>
+                  <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-[#388bfd]" /> Direct / Transitive Callers</span>
+                  <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-[#f85149]" /> CVE Blast Target / Refactored</span>
                 </div>
               </div>
 
