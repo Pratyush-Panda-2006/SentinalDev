@@ -35,6 +35,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.runPipeline = runPipeline;
 const path = __importStar(require("path"));
+const os = __importStar(require("os"));
 const blastRadiusAuditor_1 = require("./agents/blastRadiusAuditor");
 const autoRemediator_1 = require("./agents/autoRemediator");
 const docuSync_1 = require("./agents/docuSync");
@@ -97,14 +98,24 @@ async function runPipeline(trigger, outputDir, gitDiff) {
         completedAt: new Date().toISOString(),
     };
     // ── Reporting ───────────────────────────────────────────────────────────────
-    const dir = outputDir ?? process.cwd();
+    const dir = outputDir ?? (process.env.VERCEL ? os.tmpdir() : process.cwd());
     const htmlPath = path.resolve(dir, 'sentinel-report.html');
     const prCommentPath = path.resolve(dir, 'sentinel-pr-comment.md');
     console.log('\n── Reporters ────────────────────────────────────────');
-    (0, htmlReporter_1.generateHtmlReport)(report, htmlPath);
-    console.log(`[Reporter] HTML  → ${htmlPath}`);
-    (0, prCommentReporter_1.generatePrComment)(report, prCommentPath);
-    console.log(`[Reporter] PR MD → ${prCommentPath}`);
+    try {
+        (0, htmlReporter_1.generateHtmlReport)(report, htmlPath);
+        console.log(`[Reporter] HTML  → ${htmlPath}`);
+    }
+    catch (err) {
+        console.warn(`[Reporter] Warning: Could not write HTML report to disk: ${err.message}`);
+    }
+    try {
+        (0, prCommentReporter_1.generatePrComment)(report, prCommentPath);
+        console.log(`[Reporter] PR MD → ${prCommentPath}`);
+    }
+    catch (err) {
+        console.warn(`[Reporter] Warning: Could not write PR comment to disk: ${err.message}`);
+    }
     console.log('\n════════════════════════════════════════════════════');
     console.log('  SentinelDev Pipeline — Complete');
     console.log('════════════════════════════════════════════════════\n');

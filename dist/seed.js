@@ -33,19 +33,21 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.getMockTargetRoot = getMockTargetRoot;
 exports.seedMockTarget = seedMockTarget;
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
+const os = __importStar(require("os"));
 /**
- * Seeds mock-target/ back to its original state before each demo run.
- *
- * This ensures `npm run demo` is fully idempotent — the pipeline can be
- * re-run an unlimited number of times without a manual `git checkout`.
- *
- * Strategy: canonical source files are stored as inline constants here and
- * written to disk before the pipeline executes.
+ * Returns the directory for mock-target.
+ * On Vercel / serverless runtimes, returns a writable path in os.tmpdir().
  */
-const MOCK_TARGET_ROOT = path.resolve(__dirname, '..', 'mock-target');
+function getMockTargetRoot() {
+    if (process.env.VERCEL) {
+        return path.join(os.tmpdir(), 'sentinel-mock-target');
+    }
+    return path.resolve(__dirname, '..', 'mock-target');
+}
 const SEED_FILES = {
     'src/lib/crypto-utils.ts': `/**
  * crypto-utils — mock library shim
@@ -235,16 +237,18 @@ paths:
  * Writes all seed files to mock-target/, resetting any mutations the
  * remediation pipeline may have made on a previous run.
  */
-function seedMockTarget() {
-    console.log('[Seed] Resetting mock-target/ to clean state...');
+function seedMockTarget(targetDir) {
+    const root = targetDir ?? getMockTargetRoot();
+    console.log(`[Seed] Resetting mock-target at ${root} to clean state...`);
     for (const [relPath, content] of Object.entries(SEED_FILES)) {
-        const absPath = path.join(MOCK_TARGET_ROOT, relPath);
+        const absPath = path.join(root, relPath);
         const dir = path.dirname(absPath);
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
         }
         fs.writeFileSync(absPath, content, 'utf-8');
     }
-    console.log(`[Seed] Restored ${Object.keys(SEED_FILES).length} file(s) in mock-target/\n`);
+    console.log(`[Seed] Restored ${Object.keys(SEED_FILES).length} file(s) in ${root}\n`);
+    return root;
 }
 //# sourceMappingURL=seed.js.map

@@ -11,6 +11,7 @@
  *   npm run dev   → tsx watch src/app.ts     (hot-reload on file changes)
  */
 import * as http from 'http';
+export declare function handleRequest(req: http.IncomingMessage, res: http.ServerResponse): Promise<void>;
 declare const server: http.Server<typeof http.IncomingMessage, typeof http.ServerResponse>;
 export default server;
 //# sourceMappingURL=app.d.ts.map
