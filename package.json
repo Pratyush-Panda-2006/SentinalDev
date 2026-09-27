@@ -26,7 +26,7 @@
     "demo:cve": "tsx src/index.ts --trigger triggers/cve-trigger.json",
     "report:open": "start sentinel-report.html || open sentinel-report.html",
     "dev:vite": "vite --port 5199",
-    "build:client": "vite build"
+    "build:client": "node ./node_modules/vite/bin/vite.js build"
   },
   "dependencies": {
     "@google/genai": "^2.24.0",
