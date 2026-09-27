@@ -1,4 +1,5 @@
 import * as path from 'path';
+import * as os from 'os';
 import { runBlastRadiusAudit } from './agents/blastRadiusAuditor';
 import { runRemediation } from './agents/autoRemediator';
 import { runDocuSync } from './agents/docuSync';
@@ -86,15 +87,25 @@ export async function runPipeline(
   };
 
   // ── Reporting ───────────────────────────────────────────────────────────────
-  const dir = outputDir ?? process.cwd();
+  const dir = outputDir ?? (process.env.VERCEL ? os.tmpdir() : process.cwd());
   const htmlPath = path.resolve(dir, 'sentinel-report.html');
   const prCommentPath = path.resolve(dir, 'sentinel-pr-comment.md');
 
   console.log('\n── Reporters ────────────────────────────────────────');
-  generateHtmlReport(report, htmlPath);
-  console.log(`[Reporter] HTML  → ${htmlPath}`);
-  generatePrComment(report, prCommentPath);
-  console.log(`[Reporter] PR MD → ${prCommentPath}`);
+  try {
+    generateHtmlReport(report, htmlPath);
+    console.log(`[Reporter] HTML  → ${htmlPath}`);
+  } catch (err) {
+    console.warn(`[Reporter] Warning: Could not write HTML report to disk: ${(err as Error).message}`);
+  }
+
+  try {
+    generatePrComment(report, prCommentPath);
+    console.log(`[Reporter] PR MD → ${prCommentPath}`);
+  } catch (err) {
+    console.warn(`[Reporter] Warning: Could not write PR comment to disk: ${(err as Error).message}`);
+  }
+
 
   console.log('\n════════════════════════════════════════════════════');
   console.log('  SentinelDev Pipeline — Complete');

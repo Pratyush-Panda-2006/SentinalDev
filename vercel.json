@@ -1,0 +1,27 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run build:client",
+  "outputDirectory": "src/public",
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/[...path]"
+    },
+    {
+      "source": "/api",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/sentinel-report.html",
+      "destination": "/api/sentinel-report.html"
+    },
+    {
+      "source": "/sentinel-pr-comment.md",
+      "destination": "/api/sentinel-pr-comment.md"
+    },
+    {
+      "source": "/((?!assets/|hero\\.mp4|.*\\..*).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

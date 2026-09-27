@@ -1,17 +1,18 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 
 /**
- * Seeds mock-target/ back to its original state before each demo run.
- *
- * This ensures `npm run demo` is fully idempotent — the pipeline can be
- * re-run an unlimited number of times without a manual `git checkout`.
- *
- * Strategy: canonical source files are stored as inline constants here and
- * written to disk before the pipeline executes.
+ * Returns the directory for mock-target.
+ * On Vercel / serverless runtimes, returns a writable path in os.tmpdir().
  */
+export function getMockTargetRoot(): string {
+  if (process.env.VERCEL) {
+    return path.join(os.tmpdir(), 'sentinel-mock-target');
+  }
+  return path.resolve(__dirname, '..', 'mock-target');
+}
 
-const MOCK_TARGET_ROOT = path.resolve(__dirname, '..', 'mock-target');
 
 const SEED_FILES: Record<string, string> = {
   'src/lib/crypto-utils.ts': `/**
@@ -207,11 +208,12 @@ paths:
  * Writes all seed files to mock-target/, resetting any mutations the
  * remediation pipeline may have made on a previous run.
  */
-export function seedMockTarget(): void {
-  console.log('[Seed] Resetting mock-target/ to clean state...');
+export function seedMockTarget(targetDir?: string): string {
+  const root = targetDir ?? getMockTargetRoot();
+  console.log(`[Seed] Resetting mock-target at ${root} to clean state...`);
 
   for (const [relPath, content] of Object.entries(SEED_FILES)) {
-    const absPath = path.join(MOCK_TARGET_ROOT, relPath);
+    const absPath = path.join(root, relPath);
     const dir = path.dirname(absPath);
 
     if (!fs.existsSync(dir)) {
@@ -221,5 +223,7 @@ export function seedMockTarget(): void {
     fs.writeFileSync(absPath, content, 'utf-8');
   }
 
-  console.log(`[Seed] Restored ${Object.keys(SEED_FILES).length} file(s) in mock-target/\n`);
+  console.log(`[Seed] Restored ${Object.keys(SEED_FILES).length} file(s) in ${root}\n`);
+  return root;
 }
+
